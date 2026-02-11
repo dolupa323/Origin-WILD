@@ -1,1 +1,0 @@
-print("[WILD] client init")
