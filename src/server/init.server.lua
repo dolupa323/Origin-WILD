@@ -1,1 +1,1 @@
-print("[WILD] server init v2")
+print("[WILD] servfffffer init v2")
