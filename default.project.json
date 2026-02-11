@@ -1,0 +1,33 @@
+{
+  "name": "WILD",
+  "tree": {
+    "$className": "DataModel",
+
+    "ReplicatedStorage": {
+      "$className": "ReplicatedStorage",
+      "Code": {
+        "$className": "Folder",
+        "Shared": { "$path": "src/shared" }
+      }
+    },
+
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "Code": {
+        "$className": "Folder",
+        "Server": { "$path": "src/server" }
+      }
+    },
+
+    "StarterPlayer": {
+      "$className": "StarterPlayer",
+      "StarterPlayerScripts": {
+        "$className": "StarterPlayerScripts",
+        "Code": {
+          "$className": "Folder",
+          "Client": { "$path": "src/client" }
+        }
+      }
+    }
+  }
+}

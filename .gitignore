@@ -1,0 +1,14 @@
+# Rojo binary / local tools
+rojo.exe
+
+# Roblox place files (keep in Team Create / cloud)
+*.rbxl
+*.rbxlx
+*.rbxlx.backup
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
