@@ -91,6 +91,12 @@ function HotbarService.Select(player, slotIndex)
 end
 
 function HotbarService:Init()
+	-- Register Remotes
+	Net.Register({
+		Contracts.Remotes.Select,
+		Contracts.Remotes.Ack
+	})
+	
 	Net.On(Contracts.Remotes.Select, function(player, payload)
 		local slot = payload.slotIndex
 		local ok, code, data = HotbarService.Select(player, slot)

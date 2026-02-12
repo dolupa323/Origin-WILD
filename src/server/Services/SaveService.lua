@@ -10,8 +10,8 @@ local Types = require(ReplicatedStorage.Code.Shared.Types)
 
 local SaveService = {}
 
-local STORE = DataStoreService:GetDataStore("WILD_SAVE_V4")
-print("[SaveService] STORE =", "WILD_SAVE_V3")
+local STORE = DataStoreService:GetDataStore("WILD_SAVE_V5")
+print("[SaveService] STORE = WILD_SAVE_V5")
 
 local cache: {[number]: table} = {}
 
