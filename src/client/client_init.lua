@@ -31,6 +31,26 @@ task.spawn(function()
 		HotbarUI:Init()
 	end
 
+	local InteractionUI = require(script.Parent.UI.InteractionUI)
+	if InteractionUI.Init then
+		InteractionUI:Init()
+	end
+
+	local DamageUI = require(script.Parent.UI.DamageUI)
+	if DamageUI.Init then
+		DamageUI:Init()
+	end
+	
+	local InventoryUI = require(script.Parent.UI.InventoryUI)
+	if InventoryUI.Init then
+		InventoryUI:Init()
+	end
+
+	local InventoryController = require(script.Parent.Controllers.InventoryController)
+	if InventoryController.Init then
+		InventoryController:Init()
+	end
+
 	local HotbarController = require(script.Parent.Controllers.HotbarController)
 	if HotbarController.Init then
 		HotbarController:Init()

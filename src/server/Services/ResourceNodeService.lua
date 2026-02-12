@@ -13,6 +13,7 @@ local ItemDB = require(Shared:WaitForChild("ItemDB"))
 
 local EntityService = require(script.Parent.EntityService)
 local DropService = require(script.Parent.DropService)
+local FeedbackService = require(script.Parent.FeedbackService)
 
 local ResourceNodeService = {}
 
@@ -99,9 +100,10 @@ function ResourceNodeService.SpawnResourceNode(position: Vector3, nodeType: stri
 	CollectionService:AddTag(part, Tags.Entity)
 	CollectionService:AddTag(part, Tags.Damageable)
 
-	-- Set Interactable for InteractService
-	part:SetAttribute("InteractType", "ResourceNode")
-	CollectionService:AddTag(part, "Interactable")
+	-- Palworld style: You hit trees/stones. You don't "Interact" with E unless it's a loose item.
+	-- Removing Interactable tag so no "E" prompt appears on big nodes.
+	-- part:SetAttribute("InteractType", "ResourceNode")
+	-- CollectionService:AddTag(part, "Interactable")
 
 	-- Register in local registry
 	local entityId = nodeModel:GetAttribute(Attr.EntityId)
@@ -159,6 +161,8 @@ function ResourceNodeService.TryHarvest(player: Player, nodeModel: Model, toolDa
 
 	local newHp = math.max(0, hp - finalDmg)
 	part:SetAttribute("HP", newHp)
+	
+	FeedbackService.ShowDamage(part.Position + Vector3.new(math.random(-1,1), 2, math.random(-1,1)), finalDmg, "Resource")
 
 	print(("[ResourceNode] %s used %s(pow=%d) on %s -> dmg %d (eff: %.1f)"):format(
 		player.Name, toolType, toolPower, part.Name, finalDmg, multiplier

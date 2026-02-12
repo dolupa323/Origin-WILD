@@ -14,5 +14,6 @@ Registry:Register("Pickaxe", require(script.Parent.EquipItems.Pickaxe))
 Registry:Register("StoneAxe", require(script.Parent.EquipItems.StoneAxe))
 Registry:Register("StonePickaxe", require(script.Parent.EquipItems.StonePickaxe))
 Registry:Register("StoneSword", require(script.Parent.EquipItems.StoneSword))
+Registry:Register("WildSphere", require(script.Parent.EquipItems.WildSphere))
 
 return Registry

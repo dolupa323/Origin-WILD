@@ -101,6 +101,24 @@ end
 
 -- ===== Core API =====
 
+function DropService.PickupValues(player, dropPart)
+	if not dropPart or not dropPart.Parent then return end
+	
+	local itemId = dropPart:GetAttribute("ItemId")
+	local qty = dropPart:GetAttribute("Qty")
+	
+	if not itemId or not qty then return end
+	
+	-- Add to inventory
+	local ok = InventoryService.AddItem(player, itemId, qty)
+	if ok then
+		dropPart:Destroy()
+		Net.Fire("Loot_Ack", player, { ok = true, msg = "picked up", data = { itemId = itemId, qty = qty } })
+	else
+		Net.Fire("Loot_Ack", player, { ok = false, msg = "full" })
+	end
+end
+
 function DropService.SpawnDrop(position: Vector3, itemId: string, qty: number, ownerUserId: number?)
 	local def = ItemDB[itemId]
 	if not def then
@@ -129,10 +147,22 @@ function DropService.SpawnDrop(position: Vector3, itemId: string, qty: number, o
 	p:SetAttribute("Qty", qty)
 	p:SetAttribute("OwnerUserId", ownerUserId or 0)
 	p:SetAttribute("SpawnTime", now())
-	p:SetAttribute("InteractType", "WorldDrop") -- For InteractService dispatch
+	
+	-- ProximityPrompt for Interaction
+	local prompt = Instance.new("ProximityPrompt")
+	prompt.ActionText = "Pickup " .. itemId
+	prompt.ObjectText = "Drop"
+	prompt.KeyboardKeyCode = Enum.KeyCode.E
+	prompt.RequiresLineOfSight = false
+	prompt.HoldDuration = 0
+	prompt.Parent = p
+	
+	prompt.Triggered:Connect(function(player)
+		DropService.PickupValues(player, p)
+	end)
 
 	CollectionService:AddTag(p, DROP_TAG)
-	CollectionService:AddTag(p, "Interactable") -- For Interact Check
+	-- CollectionService:AddTag(p, "Interactable") -- Removed in favor of ProximityPrompt
 
 	print(("[Drop] spawned %s x%d id=%s owner=%d"):format(itemId, qty, dropId, ownerUserId or 0))
 

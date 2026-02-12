@@ -7,6 +7,9 @@ local CollectionService = game:GetService("CollectionService")
 -- 1. Base Services
 local SaveService = require(script.Parent.Services.SaveService)
 local InventoryService = require(script.Parent.Services.InventoryService)
+if InventoryService.Init then
+	InventoryService:Init()
+end
 print("[InventoryService] ready")
 
 -- 2. EquipService
@@ -94,10 +97,22 @@ print("[HotbarService] ready")
 local UseService = require(script.Parent.Services.UseService)
 if UseService.Init then
 	UseService:Init()
-else
-	warn("[UseService] missing Init()")
 end
 print("[UseService] ready")
+
+-- 12. FeedbackService (UX)
+local FeedbackService = require(script.Parent.Services.FeedbackService)
+if FeedbackService.Init then
+	FeedbackService:Init()
+end
+print("[FeedbackService] ready")
+
+-- 13. CaptureService (Palworld)
+local CaptureService = require(script.Parent.Services.CaptureService)
+if CaptureService.Init then
+	CaptureService:Init()
+end
+print("[CaptureService] ready")
 
 -- === Phase 1 Test Playground ===
 local function createLabel(parent, text, color)
@@ -125,31 +140,32 @@ local function SetupTestPlayground(player)
 	local hrp = char:WaitForChild("HumanoidRootPart")
 	task.wait(1)
 
+	-- Clear Inventory for fresh test
+	local save = SaveService.Get(player)
+	if save and save.Inventory and save.Inventory.Slots then
+		for i = 1, 30 do
+			save.Inventory.Slots[i] = nil
+		end
+		print("[Playground] Cleared inventory for " .. player.Name)
+	end
+
 	-- Base Position (Facing direction of player, at player's foot level)
-	local spawnCFrame = hrp.CFrame * CFrame.new(0, -3, -20) -- 20 studs in front, 3 studs down (feet)
+	local spawnCFrame = hrp.CFrame * CFrame.new(0, -3, -15) 
 	local origin = spawnCFrame.Position
 	
-	-- 1. Equipment Station (Platform) - Make it big and bright so it's visible
+	-- 1. Equipment Station (Platform) - MASSIVE floor for distance
 	local equipZone = Instance.new("Part")
 	equipZone.Name = "Zone_Equip"
-	equipZone.Size = Vector3.new(40, 1, 40)
-	equipZone.CFrame = spawnCFrame * CFrame.new(0, -0.5, 0)
+	equipZone.Size = Vector3.new(120, 1, 120)
+	equipZone.CFrame = spawnCFrame * CFrame.new(0, -0.5, -20) -- Center set ahead
 	equipZone.Anchored = true
-	equipZone.Color = Color3.fromRGB(60, 60, 70)
-	equipZone.Material = Enum.Material.Concrete
+	equipZone.Color = Color3.fromRGB(45, 45, 50)
+	equipZone.Material = Enum.Material.Slate
 	equipZone.Parent = workspace
-	createLabel(equipZone, "--- PHASE 1 TEST SANDBOX ---", Color3.new(1, 1, 0))
+	createLabel(equipZone, "--- PHASE 1 TEST SANDBOX (Distance Corrected) ---", Color3.new(1, 1, 0))
 	
-	print("[Playground] Spawned at: " .. tostring(origin))
-	
-	-- Give Items
-	InventoryService.AddItem(player, "StoneAxe", 1)
-	InventoryService.AddItem(player, "StonePickaxe", 1)
-	InventoryService.AddItem(player, "StoneSword", 1)
-	HotbarService.Select(player, 1)
-	
-	-- 2. Tree Zone (Left)
-	local treeZonePos = origin + (spawnCFrame.RightVector * -15)
+	-- 2. Safe Zone: Left (Trees)
+	local treeZonePos = origin + (spawnCFrame.RightVector * -20)
 	for i = 1, 3 do
 		local pos = treeZonePos + Vector3.new(math.random(-5, 5), 0, math.random(-5, 5))
 		local tree = ResourceNodeService.SpawnResourceNode(pos, "Tree")
@@ -158,8 +174,8 @@ local function SetupTestPlayground(player)
 		end
 	end
 	
-	-- 3. Stone Zone (Right)
-	local stoneZonePos = origin + (spawnCFrame.RightVector * 15)
+	-- 3. Safe Zone: Right (Stones)
+	local stoneZonePos = origin + (spawnCFrame.RightVector * 20)
 	for i = 1, 3 do
 		local pos = stoneZonePos + Vector3.new(math.random(-5, 5), 0, math.random(-5, 5))
 		local stone = ResourceNodeService.SpawnResourceNode(pos, "Stone")
@@ -168,40 +184,50 @@ local function SetupTestPlayground(player)
 		end
 	end
 	
-	-- 4. Combat Zone (Forward)
-	local combatZonePos = origin + (spawnCFrame.LookVector * 10)
-	
-	-- Dummy
+	-- 4. Passive Combat Zone: Forward (Dummy)
+	local dummyPos = origin + (spawnCFrame.LookVector * 15)
 	local dummy = Instance.new("Model")
 	dummy.Name = "TestDummy"
 	local dPart = Instance.new("Part")
 	dPart.Name = "HumanoidRootPart"
 	dPart.Size = Vector3.new(2, 6, 2)
-	dPart.Position = combatZonePos + Vector3.new(0, 3, 0)
+	dPart.Position = dummyPos + Vector3.new(0, 3, 0)
 	dPart.Anchored = true
 	dPart.Color = Color3.new(0.8, 0.2, 0.2)
 	dPart.Parent = dummy
 	dummy.Parent = workspace
 	
 	local EntityService = require(script.Parent.Services.EntityService)
-	EntityService.CreateEntity(dummy, { HP = 100, MaxHP = 100, Faction = "Enemy" })
+	EntityService.CreateEntity(dummy, { HP = 100, MaxHP = 100, Faction = "Neutral" })
 	CollectionService:AddTag(dummy, "Damageable")
 	CollectionService:AddTag(dPart, "Damageable")
-	createLabel(dPart, "🎯 Target Dummy", Color3.new(1, 0, 0))
+	createLabel(dPart, "🎯 Training Dummy (Passive)", Color3.new(1, 1, 1))
+
+	-- 5. DANGER ZONE: FAR Forward (Orc AI)
+	-- Moved 50 studs away to avoid detection (Detection Range=30)
+	local dangerZonePos = origin + (spawnCFrame.LookVector * 50)
 	
-	-- AI (Active)
+	-- Warning Sign
+	local warningPart = Instance.new("Part")
+	warningPart.Size = Vector3.new(10, 0.1, 4)
+	warningPart.Position = dangerZonePos + (spawnCFrame.LookVector * -10)
+	warningPart.Anchored = true
+	warningPart.CanCollide = false
+	warningPart.Transparency = 1
+	warningPart.Parent = workspace
+	createLabel(warningPart, "⚠️ DANGER: HOSTILE AI AHEAD ⚠️", Color3.new(1, 0, 0))
+
 	local AIService = require(script.Parent.Services.AIService)
-	local ai = AIService.SpawnAI(combatZonePos + (spawnCFrame.RightVector * 8), player, { Name = "OrcAI" })
+	local ai = AIService.SpawnAI(dangerZonePos, player, { Name = "OrcAI" })
 	if ai then
-		createLabel(ai.PrimaryPart, "👹 Aggressive AI", Color3.new(1, 0.2, 0.2))
+		createLabel(ai.PrimaryPart, "👹 Aggressive AI (Level 1)", Color3.new(1, 0, 0))
 	end
 	
-	-- 5. Loot & Craft Zone (Near)
-	local lootPos = origin + (spawnCFrame.LookVector * -5)
-	DropService.SpawnDrop(lootPos + (spawnCFrame.RightVector * -3), "Wood", 10)
-	DropService.SpawnDrop(lootPos + (spawnCFrame.RightVector * 3), "Stone", 10)
+	-- 6. Loot & Craft Zone (Spawn Area)
+	local lootPos = origin + (spawnCFrame.LookVector * -8)
+	DropService.SpawnDrop(lootPos + (spawnCFrame.RightVector * -4), "Wood", 10)
+	DropService.SpawnDrop(lootPos + (spawnCFrame.RightVector * 4), "Stone", 10)
 	
-	-- Craft Bench
 	local bench = Instance.new("Part")
 	bench.Name = "CraftBench"
 	bench.Size = Vector3.new(6, 3, 3)
@@ -213,7 +239,14 @@ local function SetupTestPlayground(player)
 	CollectionService:AddTag(bench, "Interactable")
 	createLabel(bench, "🔨 Crafting Bench", Color3.new(1, 1, 1))
 
-	print("[Playground] Setup Complete in front of player!")
+	-- Give Items
+	InventoryService.AddItem(player, "StoneAxe", 1)
+	InventoryService.AddItem(player, "StonePickaxe", 1)
+	InventoryService.AddItem(player, "StoneSword", 1)
+	InventoryService.AddItem(player, "WildSphere", 10)
+	HotbarService.Select(player, 1)
+
+	print("[Playground] Setup Complete. Danger zone is 50 studs away!")
 end
 
 Players.PlayerAdded:Connect(function(player)

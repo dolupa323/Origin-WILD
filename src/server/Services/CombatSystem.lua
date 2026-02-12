@@ -11,6 +11,7 @@ local Shared = ReplicatedStorage:WaitForChild("Code"):WaitForChild("Shared")
 local Net = require(Shared:WaitForChild("Net"))
 
 local EffectService = require(script.Parent.EffectService)
+local FeedbackService = require(script.Parent.FeedbackService)
 
 local CombatSystem = {}
 
@@ -117,6 +118,8 @@ function CombatSystem.AttackRequest(player: Player, rid: string, data: table)
 	local before = hum.Health
 	hum:TakeDamage(MELEE_DAMAGE)
 	local after = hum.Health
+	
+	FeedbackService.ShowDamage(hit.Position, MELEE_DAMAGE, "Default")
 
 	-- optional: apply burn to attacker (Phase0 test), or to victim player if it is a Player
 	-- For Phase0, simplest: apply to attacker to prove pipeline works,

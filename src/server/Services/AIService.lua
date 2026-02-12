@@ -13,6 +13,7 @@ local Tags = require(Shared:WaitForChild("Tags"))
 local Attr = require(Shared:WaitForChild("Attr"))
 
 local EntityService = require(script.Parent.EntityService)
+local FeedbackService = require(script.Parent.FeedbackService)
 
 local AIService = {}
 
@@ -228,6 +229,8 @@ local function stateAttack(aiState, dt)
 					local before = hum.Health
 					hum:TakeDamage(dmg)
 					local after = hum.Health
+					
+					FeedbackService.ShowDamage(model:GetPivot().Position, dmg, "Critical")
 
 					print(("[AI] %s Attack: hit=%s dmg=%d hp %.1f->%.1f"):format(
 						aiModel.Name, model:GetFullName(), dmg, before, after
@@ -323,9 +326,13 @@ function AIService.SpawnAI(position: Vector3, targetPlayer: Player, opts: table?
 	head:SetAttribute("HP", hum.Health)
 	head:SetAttribute("MaxHP", hum.MaxHealth)
 
-	-- Create and register AI state
 	local aiState = createAIState(aiModel, targetPlayer)
 	aiRegistry[entityId] = aiState
+
+	-- Expose to attributes for UI
+	aiModel:SetAttribute("Level", opts.Level or math.random(1, 5))
+	aiModel:SetAttribute("State", aiState.state)
+	aiModel:SetAttribute("WorkPower", opts.WorkPower or 10)
 
 	print(("[AI] Spawned %s (entityId=%s) at %s for player %s"):format(
 		aiModel.Name, entityId, tostring(position), targetPlayer.Name
@@ -373,7 +380,12 @@ local function stepTick(dt)
 		if newState ~= aiState.state then
 			print(("[AI] %s state transition: %s -> %s"):format(aiModel.Name, aiState.state, newState))
 			aiState.state = newState
+			aiModel:SetAttribute("State", newState)
 		end
+		
+		-- Sync HP for UI
+		aiModel:SetAttribute("HP", hum.Health)
+		aiModel:SetAttribute("MaxHP", hum.MaxHealth)
 	end
 end
 

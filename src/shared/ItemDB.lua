@@ -45,4 +45,11 @@ return {
 		EquipType = "Weapon",
 		Use = "Melee",
 	},
+
+	WildSphere = {
+		MaxStack = 99,
+		Type = "Consumable",
+		Use = "Capture",
+		CatchRate = 0.5, -- Base 50%
+	},
 }
