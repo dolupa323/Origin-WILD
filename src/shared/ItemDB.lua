@@ -20,10 +20,23 @@ return {
 	StoneAxe = {
 		MaxStack = 1,
 		Type = "Equipment",
+		EquipType = "Tool",
+		Use = "Harvest",
+		NodeTags = {"ResourceNode"},
 	},
 
 	StonePickaxe = {
 		MaxStack = 1,
 		Type = "Equipment",
+		EquipType = "Tool",
+		Use = "Harvest",
+		NodeTags = {"ResourceNode"},
+	},
+
+	StoneSword = {
+		MaxStack = 1,
+		Type = "Equipment",
+		EquipType = "Weapon",
+		Use = "Melee",
 	},
 }

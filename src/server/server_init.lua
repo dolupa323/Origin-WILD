@@ -310,4 +310,61 @@ task.delay(7, function()
 	print("[CraftBenchTest] then client sends Craft_Request")
 end)
 
+-- === Phase1-3 TEST HARNESS (Tool/Weapon test) ===
+task.delay(8, function()
+	if workspace:FindFirstChild("Phase1-3Test") then return end
+
+	local player = Players:GetPlayers()[1]
+	if not player then
+		warn("[Phase1-3Test] no players yet")
+		return
+	end
+
+	local char = player.Character or player.CharacterAdded:Wait()
+	local phrp = char:WaitForChild("HumanoidRootPart")
+
+	-- 1. Clear and equip tools
+	local InventoryService = require(script.Parent.Services.InventoryService)
+	local EquipService = require(script.Parent.Services.EquipService)
+	local SaveService = require(script.Parent.Services.SaveService)
+	local save = SaveService.Get(player)
+	local inv = save.Inventory.Slots
+	local equip = save.Inventory.Equip
+
+	-- Clear inventory
+	for i=1,30 do inv[i] = nil end
+	for k,v in pairs(equip) do equip[k] = nil end
+
+	-- Add tools: StoneAxe, StonePickaxe, StoneSword
+	InventoryService.AddItem(player, "StoneAxe", 1)
+	InventoryService.AddItem(player, "StonePickaxe", 1)
+	InventoryService.AddItem(player, "StoneSword", 1)
+	print("[Phase1-3Test] added StoneAxe, StonePickaxe, StoneSword to inventory")
+
+	-- Auto-equip StoneSword to Weapon slot for testing
+	equip["Weapon"] = { ItemId="StoneSword", Qty=1 }
+	print("[Phase1-3Test] auto-equipped StoneSword to Weapon slot")
+
+	-- 2. Spawn ResourceNode (for Axe/Pickaxe test)
+	local resourceNodeService = require(script.Parent.Services.ResourceNodeService)
+	local nodeSpawn = phrp.Position + Vector3.new(0, 0, -5)
+	local testNode = resourceNodeService.SpawnResourceNode(nodeSpawn, "Stone")
+	if testNode then
+		print("[Phase1-3Test] spawned ResourceNode at", testNode:GetPrimaryPartCFrame().Position)
+	end
+
+	-- 3. Mark this test session
+	local marker = Instance.new("BoolValue")
+	marker.Name = "Phase1-3Test"
+	marker.Parent = workspace
+	game:GetService("Debris"):AddItem(marker, 120) -- Remove after 2 minutes
+
+	print("[Phase1-3Test] setup complete")
+	print("[Phase1-3Test] Test instructions:")
+	print("  1. Equip StoneAxe and use (E+Click) on stone node")
+	print("  2. Equip StonePickaxe and use on stone node")
+	print("  3. Equip StoneSword and use (E+Click) on dummy")
+	print("  Expected: [ResourceNode] hit/depleted, [Combat] hit logs")
+end)
+
 return true

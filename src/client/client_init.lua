@@ -50,15 +50,33 @@ task.delay(4, function()
 end)
 
 -- === Phase1-2 Crafting Test (토글) ===
-local folder = script.Parent
-local m = folder:FindFirstChild("crafting_test")
-	or folder:FindFirstChild("crafting_test.client")
-	or folder:FindFirstChild("crafting_test.client.lua")
+task.spawn(function()
+	local folder = script.Parent
+	local m = folder:FindFirstChild("crafting_test")
+		or folder:FindFirstChild("crafting_test.client")
+		or folder:FindFirstChild("crafting_test.client.lua")
 
-if m then
-	require(m)
-else
-	warn("[client_init] crafting_test module not found")
-end
+	if m and m:IsA("ModuleScript") then
+		local ok, err = pcall(require, m)
+		if not ok then
+			warn("[client_init] crafting_test require error:", err)
+		end
+	end
+end)
+
+-- === Phase1-3 Equip Test (토글) ===
+task.spawn(function()
+	local folder = script.Parent
+	local m = folder:FindFirstChild("equip_test")
+		or folder:FindFirstChild("equip_test.client")
+		or folder:FindFirstChild("equip_test.client.lua")
+
+	if m and m:IsA("ModuleScript") then
+		local ok, err = pcall(require, m)
+		if not ok then
+			warn("[client_init] equip_test require error:", err)
+		end
+	end
+end)
 
 return true

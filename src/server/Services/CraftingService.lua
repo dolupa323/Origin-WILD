@@ -44,7 +44,7 @@ end
 local function canFitOutputs(player, recipe)
 	local slots = InventoryService.GetSlots(player)
 	if not slots then 
-		print("[Crafting] canFitOutputs: no slots")
+		-- ...existing code...
 		return false 
 	end
 
@@ -55,7 +55,7 @@ local function canFitOutputs(player, recipe)
 		local def = ItemDB[itemId]
 		
 		if not def then
-			print(("[Crafting] canFitOutputs: %s not in ItemDB"):format(itemId))
+			-- ...existing code...
 			return false
 		end
 
@@ -90,12 +90,12 @@ local function canFitOutputs(player, recipe)
 
 		-- If anything left, cannot fit
 		if remaining > 0 then
-			print(("[Crafting] canFitOutputs: cannot fit %s x%d (remaining=%d)"):format(itemId, qty, remaining))
+			-- ...existing code...
 			return false
 		end
 	end
 
-	print("[Crafting] canFitOutputs: all outputs fit ✓")
+	-- ...existing code...
 	return true
 end
 
@@ -111,7 +111,7 @@ function CraftingService.OpenBench(player: Player, benchInstance: Instance): (bo
 		t = now(),
 	}
 
-	print(("[Crafting] OpenBench player=%s bench=%s"):format(player.Name, benchInstance:GetFullName()))
+	-- ...existing code...
 	return true, Contracts.Error.OK
 end
 
@@ -179,14 +179,14 @@ function CraftingService.HandleCraftRequest(player: Player, payload: table): tab
 		end
 
 		if have < input.qty then
-			print(("[Crafting] insufficient %s: have=%d need=%d"):format(input.id, have, input.qty))
+			-- ...existing code...
 			return ack(rid, false, Contracts.Error.NOT_ENOUGH_ITEMS, ("need %s x%d"):format(input.id, input.qty))
 		end
 	end
 
 	-- 2. Check if outputs can fit (BEFORE consuming)
 	if not canFitOutputs(player, recipe) then
-		print(("[Crafting] inventory full, cannot fit outputs"))
+		-- ...existing code...
 		return ack(rid, false, Contracts.Error.INVENTORY_FULL, "inventory_full")
 	end
 
@@ -195,19 +195,19 @@ function CraftingService.HandleCraftRequest(player: Player, payload: table): tab
 	-- Consume inputs (negative qty for InventoryService.AddItem)
 	for _, input in ipairs(recipe.inputs) do
 		InventoryService.AddItem(player, input.id, -input.qty)
-		print(("[Crafting] consume %s x%d"):format(input.id, input.qty))
+		-- ...existing code...
 	end
 
 	-- Grant outputs
 	for _, output in ipairs(recipe.outputs) do
 		local ok = InventoryService.AddItem(player, output.id, output.qty)
 		if not ok then
-			print(("[Crafting] WARNING: grant failed for %s x%d (but inputs already consumed)"):format(output.id, output.qty))
+			-- ...existing code...
 		end
-		print(("[Crafting] grant %s x%d"):format(output.id, output.qty))
+		-- ...existing code...
 	end
 
-	print(("[Crafting] request recipe=%s x1 by %s"):format(recipeName, player.Name))
+	-- ...existing code...
 	return ack(rid, true, Contracts.Error.OK, nil, { recipe=recipeName })
 end
 

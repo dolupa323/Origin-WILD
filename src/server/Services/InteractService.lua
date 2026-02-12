@@ -75,7 +75,7 @@ local handlers = {}
 
 -- Phase0 기본 핸들러 (콘텐츠 없음 -> 로그로만 검증)
 handlers.Default = function(player, target, hit, distance)
-	print(("[Interact] %s -> %s (hit=%s, dist=%.2f)"):format(player.Name, target:GetFullName(), hit:GetFullName(), distance))
+	-- ...existing code...
 	return true, Contracts.Error.OK, nil, {
 		target = target:GetFullName(),
 		hit = hit:GetFullName(),

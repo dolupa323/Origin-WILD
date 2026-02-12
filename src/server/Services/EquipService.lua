@@ -9,6 +9,8 @@ local Contracts = require(Shared:WaitForChild("Contracts"):WaitForChild("Contrac
 
 local SaveService = require(script.Parent:WaitForChild("SaveService"))
 local InventoryService = require(script.Parent:WaitForChild("InventoryService"))
+local ResourceNodeService = require(script.Parent:WaitForChild("ResourceNodeService"))
+local CombatSystem = require(script.Parent:WaitForChild("CombatSystem"))
 
 local EquipService = {}
 
@@ -179,6 +181,8 @@ function EquipService:_handleUse(player, payload)
 		slot=slot,
 		aim=data.aim,
 		mode=data.mode,
+		ResourceNodeService=ResourceNodeService,
+		CombatSystem=CombatSystem,
 	})
 	if okHook == false then
 		return ack(rid, false, code or Contracts.Error.DENIED, "OnUse denied")
