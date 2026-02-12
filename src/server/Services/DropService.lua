@@ -147,22 +147,10 @@ function DropService.SpawnDrop(position: Vector3, itemId: string, qty: number, o
 	p:SetAttribute("Qty", qty)
 	p:SetAttribute("OwnerUserId", ownerUserId or 0)
 	p:SetAttribute("SpawnTime", now())
-	
-	-- ProximityPrompt for Interaction
-	local prompt = Instance.new("ProximityPrompt")
-	prompt.ActionText = "Pickup " .. itemId
-	prompt.ObjectText = "Drop"
-	prompt.KeyboardKeyCode = Enum.KeyCode.E
-	prompt.RequiresLineOfSight = false
-	prompt.HoldDuration = 0
-	prompt.Parent = p
-	
-	prompt.Triggered:Connect(function(player)
-		DropService.PickupValues(player, p)
-	end)
+	p:SetAttribute("InteractType", "WorldDrop") -- For InteractService dispatch
 
 	CollectionService:AddTag(p, DROP_TAG)
-	-- CollectionService:AddTag(p, "Interactable") -- Removed in favor of ProximityPrompt
+	CollectionService:AddTag(p, "Interactable") -- For Interact Check
 
 	print(("[Drop] spawned %s x%d id=%s owner=%d"):format(itemId, qty, dropId, ownerUserId or 0))
 

@@ -25,46 +25,34 @@ end)
 
 -- === Phase1-4 Hotbar/Use Controllers ===
 task.spawn(function()
+	local UI = script.Parent:WaitForChild("UI")
+	local Controllers = script.Parent:WaitForChild("Controllers")
+
 	-- UI First
-	local HotbarUI = require(script.Parent.UI.HotbarUI)
-	if HotbarUI.Init then
-		HotbarUI:Init()
-	end
+	local HotbarUI = require(UI:WaitForChild("HotbarUI"))
+	if HotbarUI.Init then HotbarUI:Init() end
 
-	local InteractionUI = require(script.Parent.UI.InteractionUI)
-	if InteractionUI.Init then
-		InteractionUI:Init()
-	end
+	local InteractionUI = require(UI:WaitForChild("InteractionUI"))
+	if InteractionUI.Init then InteractionUI:Init() end
 
-	local DamageUI = require(script.Parent.UI.DamageUI)
-	if DamageUI.Init then
-		DamageUI:Init()
-	end
+	local DamageUI = require(UI:WaitForChild("DamageUI"))
+	if DamageUI.Init then DamageUI:Init() end
 	
-	local InventoryUI = require(script.Parent.UI.InventoryUI)
-	if InventoryUI.Init then
-		InventoryUI:Init()
-	end
+	local InventoryUI = require(UI:WaitForChild("InventoryUI"))
+	if InventoryUI.Init then InventoryUI:Init() end
 
-	local InventoryController = require(script.Parent.Controllers.InventoryController)
-	if InventoryController.Init then
-		InventoryController:Init()
-	end
+	-- Controllers
+	local InventoryController = require(Controllers:WaitForChild("InventoryController"))
+	if InventoryController.Init then InventoryController:Init() end
 
-	local HotbarController = require(script.Parent.Controllers.HotbarController)
-	if HotbarController.Init then
-		HotbarController:Init()
-	end
+	local HotbarController = require(Controllers:WaitForChild("HotbarController"))
+	if HotbarController.Init then HotbarController:Init() end
 	
-	local UseController = require(script.Parent.Controllers.UseController)
-	if UseController.Init then
-		UseController:Init()
-	end
+	local UseController = require(Controllers:WaitForChild("UseController"))
+	if UseController.Init then UseController:Init() end
 	
-	local InteractController = require(script.Parent.Controllers.InteractController)
-	if InteractController.Init then
-		InteractController:Init()
-	end
+	local InteractController = require(Controllers:WaitForChild("InteractController"))
+	if InteractController.Init then InteractController:Init() end
 end)
 
 return true
