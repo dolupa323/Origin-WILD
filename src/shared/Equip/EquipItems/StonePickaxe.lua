@@ -49,10 +49,11 @@ function StonePickaxe.OnUse(ctx)
 		return true, "OK", { hit = false }
 	end
 
-	local hitInst = result.Instance
+	-- Find ResourceNode ancestor
 	local target = hitInst:IsA("Model") and hitInst or hitInst:FindFirstAncestorOfClass("Model")
 	
-	if not target or target:GetAttribute("InteractType") ~= "ResourceNode" then
+	local CollectionService = game:GetService("CollectionService")
+	if not target or (not CollectionService:HasTag(target, "ResourceNode") and not CollectionService:HasTag(target.PrimaryPart, "ResourceNode")) then
 		return true, "OK", { hit = true, result = "NOT_RESOURCE_NODE" }
 	end
 

@@ -62,10 +62,18 @@ function HotbarController:Init()
 			
 			-- Update UI
 			local HotbarUI = require(script.Parent.Parent.UI.HotbarUI) -- Lazy require or move up
-			HotbarUI.OnSelect(payload.activeSlot, payload.itemId, payload.qty)
+			if HotbarUI.OnSelect then
+				HotbarUI.OnSelect(payload.activeSlot, payload.itemId, payload.qty)
+			end
 		else
 			warn(("[HotbarClient] Select Failed: %s"):format(payload.code))
 		end
+	end)
+
+	-- Initial Sync Request
+	task.delay(1.5, function()
+		print("[HotbarController] Requesting initial sync...")
+		HotbarController.Refresh()
 	end)
 
 	print("[HotbarController] ready")

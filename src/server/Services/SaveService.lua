@@ -63,7 +63,23 @@ for i = 1, 30 do
 end
 
 	cache[player.UserId] = data
+	cache[player.UserId] = data
 	return data
+end
+
+function SaveService.IsLoaded(player)
+	return cache[player.UserId] ~= nil
+end
+
+function SaveService.WaitForData(player)
+	if cache[player.UserId] then return true end
+	
+	local start = os.clock()
+	while os.clock() - start < 10 do
+		if cache[player.UserId] then return true end
+		task.wait(0.1)
+	end
+	return false
 end
 
 function SaveService.Save(player)

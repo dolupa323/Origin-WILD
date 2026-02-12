@@ -140,6 +140,12 @@ local function SetupTestPlayground(player)
 	local hrp = char:WaitForChild("HumanoidRootPart")
 	task.wait(1)
 
+	-- Wait for Data Load (Fixes Race Condition)
+	if not SaveService.WaitForData(player) then
+		warn("[Playground] Data load timeout for " .. player.Name)
+		return
+	end
+
 	-- Clear Inventory for fresh test
 	local save = SaveService.Get(player)
 	if save and save.Inventory and save.Inventory.Slots then
