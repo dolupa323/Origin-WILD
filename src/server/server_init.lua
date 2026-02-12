@@ -133,7 +133,7 @@ local function createLabel(parent, text, color)
 end
 
 local function SetupTestPlayground(player)
-	print("[Playground] Setting up Phase 1 Test Area for " .. player.Name)
+	-- print("[Playground] Setting up Phase 1 Test Area for " .. player.Name)
 	
 	-- Wait for Character
 	local char = player.Character or player.CharacterAdded:Wait()
@@ -152,7 +152,7 @@ local function SetupTestPlayground(player)
 		for i = 1, 30 do
 			save.Inventory.Slots[i] = nil
 		end
-		print("[Playground] Cleared inventory for " .. player.Name)
+        -- print("[Playground] Cleared inventory for " .. player.Name)
 	end
 
 	-- Base Position (Facing direction of player, at player's foot level)
@@ -252,7 +252,7 @@ local function SetupTestPlayground(player)
 	InventoryService.AddItem(player, "WildSphere", 10)
 	HotbarService.Select(player, 1)
 
-	print("[Playground] Setup Complete. Danger zone is 50 studs away!")
+	-- print("[Playground] Setup Complete. Danger zone is 50 studs away!")
 end
 
 Players.PlayerAdded:Connect(function(player)

@@ -3,12 +3,12 @@
 
 return {
 	Wood = {
-		MaxStack = 100,
+		MaxStack = 99,
 		Type = "Resource",
 	},
 
 	Stone = {
-		MaxStack = 100,
+		MaxStack = 99,
 		Type = "Resource",
 	},
 

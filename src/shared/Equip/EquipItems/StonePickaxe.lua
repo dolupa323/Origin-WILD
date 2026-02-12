@@ -50,6 +50,7 @@ function StonePickaxe.OnUse(ctx)
 	end
 
 	-- Find ResourceNode ancestor
+	local hitInst = result.Instance
 	local target = hitInst:IsA("Model") and hitInst or hitInst:FindFirstAncestorOfClass("Model")
 	
 	local CollectionService = game:GetService("CollectionService")

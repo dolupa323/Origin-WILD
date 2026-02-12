@@ -32,7 +32,6 @@ Types.NewPlayerSave = function()
 		Base = { Claims={}, Structures={} },
 	}
 
-	print("[Types] NewPlayerSave SlotsLen =", #save.Inventory.Slots)
 	return save
 end
 

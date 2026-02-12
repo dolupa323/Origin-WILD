@@ -101,9 +101,7 @@ function EffectService.Apply(target, effectId: string, duration: number, stacksD
 		st.expiresAt = math.max(st.expiresAt, now() + duration)
 	end
 
-	print(("[Effect] Apply %s stacks=%d dur=%.2f target=%s"):format(
-		effectId, st.stacks, (st.expiresAt - now()), typeof(k) == "Player" and k.Name or k:GetFullName()
-	))
+	-- print(("[Effect] Apply %s stacks=%d dur=%.2f target=%s"):format(effectId, st.stacks, (st.expiresAt - now()), typeof(k) == "Player" and k.Name or k:GetFullName()))
 
 	emitApplied(k, effectId, st)
 	return true, "OK"
@@ -122,9 +120,7 @@ function EffectService.Remove(target, effectId: string, reason: string?)
 		effectsByKey[k] = nil
 	end
 
-	print(("[Effect] Remove %s reason=%s target=%s"):format(
-		effectId, reason or "manual", typeof(k) == "Player" and k.Name or k:GetFullName()
-	))
+	-- print(("[Effect] Remove %s reason=%s target=%s"):format(effectId, reason or "manual", typeof(k) == "Player" and k.Name or k:GetFullName()))
 
 	emitRemoved(k, effectId)
 	return true, "OK"
@@ -150,9 +146,7 @@ local function applyBurnTick(targetKey, st)
 		local hum = char and char:FindFirstChildOfClass("Humanoid")
 		if hum and hum.Health > 0 then
 			hum:TakeDamage(dmg)
-			print(("[Effect][Burn] tick %s dmg=%d stacks=%d hp=%.1f"):format(
-				targetKey.Name, dmg, st.stacks, hum.Health
-			))
+			-- print(("[Effect][Burn] tick %s dmg=%d stacks=%d hp=%.1f"):format(targetKey.Name, dmg, st.stacks, hum.Health))
 		end
 	else
 		-- EntityService가 HP 기반 엔티티를 관리한다면 그쪽으로 Damage

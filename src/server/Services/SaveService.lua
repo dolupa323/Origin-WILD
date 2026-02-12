@@ -11,7 +11,7 @@ local Types = require(ReplicatedStorage.Code.Shared.Types)
 local SaveService = {}
 
 local STORE = DataStoreService:GetDataStore("WILD_SAVE_V5")
-print("[SaveService] STORE = WILD_SAVE_V5")
+-- print("[SaveService] STORE = WILD_SAVE_V5")
 
 local cache: {[number]: table} = {}
 
@@ -43,7 +43,7 @@ function SaveService.Load(player)
 	local ok, err = pcall(function()
 		data = STORE:GetAsync(key)
 	end)
-  print("[SaveService] Load key =", key, "found =", data ~= nil)
+	-- print("[SaveService] Load key =", key, "found =", data ~= nil)
 
 	if not ok then
 		warn("[SaveService] Load failed:", err)
@@ -62,7 +62,6 @@ for i = 1, 30 do
 	end
 end
 
-	cache[player.UserId] = data
 	cache[player.UserId] = data
 	return data
 end

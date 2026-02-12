@@ -42,7 +42,12 @@ function InventoryService.Sync(player)
 end
 
 function InventoryService:Init()
-	Net.Register(Contracts.Remotes)
+	Net.Register({
+		Contracts.Remotes.SyncRequest,
+		Contracts.Remotes.Update,
+		Contracts.Remotes.SwapRequest,
+		Contracts.Remotes.DropRequest,
+	})
 	
 	Net.On(Contracts.Remotes.SyncRequest, function(player)
 		InventoryService.Sync(player)
@@ -54,6 +59,13 @@ function InventoryService:Init()
 		if from and to then
 			InventoryService.Move(player, from, to)
 			InventoryService.Sync(player)
+		end
+	end)
+	
+	Net.On(Contracts.Remotes.DropRequest, function(player, payload)
+		local slotIdx = payload.slotIdx
+		if type(slotIdx) == "number" then
+			InventoryService.DropItem(player, slotIdx)
 		end
 	end)
 	
@@ -139,11 +151,11 @@ end
 function InventoryService.Move(player, fromIdx, toIdx, qty)
 	local inv = getInv(player)
 
+	if fromIdx < 1 or fromIdx > 30 then return false end
+	if toIdx < 1 or toIdx > 30 then return false end
+
 	local a = inv[fromIdx]
 	local b = inv[toIdx]
-
-  if fromIdx < 1 or fromIdx > 30 then return false end
-  if toIdx < 1 or toIdx > 30 then return false end
 
 	if not a then return false end
 
@@ -184,10 +196,10 @@ function InventoryService.DebugTest(player)
 	InventoryService.AddItem(player, "Wood", 150)
 	InventoryService.AddItem(player, "Stone", 50)
   local slots = getInv(player)
-  print("[InventoryService] slots_len =", #slots, "slots_type =", typeof(slots))
+	-- print("[InventoryService] slots_len =", #slots, "slots_type =", typeof(slots))
 
 	local inv = getInv(player)
-	print(("[InventoryService] loaded slots_len=%d"):format(#slots))
+	-- print(("[InventoryService] loaded slots_len=%d"):format(#slots))
 end
 
 -------------------------------------------------
@@ -207,6 +219,37 @@ function InventoryService.GetSlot(player, slotIndex)
 		Qty = s.Qty,
 		Meta = s.Meta
 	}
+end
+
+-------------------------------------------------
+-- Drop Item to World
+-------------------------------------------------
+
+function InventoryService.DropItem(player, slotIdx)
+	local inv = getInv(player)
+	if slotIdx < 1 or slotIdx > 30 then return false end
+	local s = inv[slotIdx]
+	if not s then return false end
+	
+	local itemId = s.ItemId
+	local qty = s.Qty
+	
+	inv[slotIdx] = nil
+	
+	local char = player.Character
+	local pos = Vector3.new(0, 5, 0)
+	if char then
+		local hrp = char:FindFirstChild("HumanoidRootPart")
+		if hrp then
+			pos = hrp.Position + Vector3.new(math.random(-3, 3), 2, math.random(-3, 3))
+		end
+	end
+	
+	local DropService = require(script.Parent.DropService)
+	DropService.SpawnDrop(pos, itemId, qty, player.UserId)
+	
+	InventoryService.Sync(player)
+	return true
 end
 
 return InventoryService

@@ -59,7 +59,7 @@ function HotbarService.Select(player, slotIndex)
 	end
 	
 	if slotIndex < 1 or slotIndex > Config.HOTBAR_SIZE then
-		print(("[Hotbar] reject code=%s slot=%s"):format(Contracts.ErrorCodes.OUT_OF_RANGE, tostring(slotIndex)))
+		-- print(("[Hotbar] reject code=%s slot=%s"):format(Contracts.ErrorCodes.OUT_OF_RANGE, tostring(slotIndex)))
 		return false, Contracts.ErrorCodes.OUT_OF_RANGE
 	end
 
@@ -75,11 +75,9 @@ function HotbarService.Select(player, slotIndex)
 	local qty = item and item.Qty
 
 	-- Log Success
-	print(("[Hotbar] select user=%s slot=%d"):format(player.Name, slotIndex))
+	-- print(("[Hotbar] select user=%s slot=%d"):format(player.Name, slotIndex))
 	if item then
-		print(("[Hotbar] active item user=%s invSlot=%d item=%s qty=%d"):format(
-			player.Name, invSlot, itemId, qty
-		))
+		-- print(("[Hotbar] active item user=%s invSlot=%d item=%s qty=%d"):format(player.Name, invSlot, itemId, qty))
 	end
 
 	return true, Contracts.ErrorCodes.OK, {

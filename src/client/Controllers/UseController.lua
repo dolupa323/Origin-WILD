@@ -31,7 +31,7 @@ function UseController:Init()
 			-- Let's use camera look vector for aim
 			local aimDir = camera.CFrame.LookVector
 			
-			print("[UseClient] request")
+			-- Send aim for server raycast
 			Net.Fire(Contracts.Remotes.Request, {
 				aim = {
 					dir = aimDir

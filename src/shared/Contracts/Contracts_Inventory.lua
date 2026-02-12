@@ -8,6 +8,7 @@ Contracts_Inventory.Remotes = {
 	SyncRequest = "Inventory_SyncRequest", -- Client -> Server: {}
 	Update = "Inventory_Update",           -- Server -> Client: { slots = {} }
 	SwapRequest = "Inventory_SwapRequest", -- Client -> Server: { fromIdx, toIdx }
+	DropRequest = "Inventory_DropRequest", -- Client -> Server: { slotIdx }
 }
 
 return Contracts_Inventory

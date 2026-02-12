@@ -9,9 +9,7 @@ local Net = require(Shared:WaitForChild("Net"))
 local FeedbackService = {}
 
 function FeedbackService.ShowDamage(position: Vector3, amount: number, damageType: string?)
-	-- Broadcast to all clients (Simple for Phase 1)
-	-- In production, you'd only send to players within range.
-	Net.Fire("Effect_DamageNum", nil, {
+	Net.Broadcast("Effect_DamageNum", {
 		pos = position,
 		amount = amount,
 		type = damageType or "Default"

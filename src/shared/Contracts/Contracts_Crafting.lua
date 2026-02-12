@@ -17,8 +17,8 @@ C.Error = {
 }
 
 C.Remotes = {
-	"Craft_Request",
-	"Craft_Ack",
+	Request = "Craft_Request",
+	Ack = "Craft_Ack",
 }
 
 return C

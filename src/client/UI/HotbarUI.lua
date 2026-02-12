@@ -199,11 +199,17 @@ end
 
 -- Full Refresh (e.g. for inventory updates)
 function HotbarUI.Refresh(inventoryData)
-	for i, slotData in pairs(inventoryData) do
+	for i = 1, Config.HOTBAR_SIZE do
 		local ui = slots[i]
-		if ui then
+		if not ui then continue end
+
+		local slotData = inventoryData and inventoryData[i]
+		if slotData then
 			ui.NameLbl.Text = slotData.ItemId or ""
-			ui.QtyLbl.Text = (slotData.Quantity and slotData.Quantity > 1) and tostring(slotData.Quantity) or ""
+			ui.QtyLbl.Text = (slotData.Qty and slotData.Qty > 1) and tostring(slotData.Qty) or ""
+		else
+			ui.NameLbl.Text = ""
+			ui.QtyLbl.Text = ""
 		end
 	end
 end

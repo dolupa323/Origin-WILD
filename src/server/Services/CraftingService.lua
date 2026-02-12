@@ -12,20 +12,7 @@ local Contracts = require(Shared:WaitForChild("Contracts"):WaitForChild("Contrac
 local ItemDB = require(Shared:WaitForChild("ItemDB"))
 
 local InventoryService = require(script.Parent.InventoryService)
-
--- RecipeDB (inline)
-local RecipeDB = {
-	StoneAxe = {
-		inputs = { {id="Wood", qty=3}, {id="Stone", qty=2} },
-		outputs = { {id="StoneAxe", qty=1} },
-		time = 0,
-	},
-	StonePickaxe = {
-		inputs = { {id="Wood", qty=2}, {id="Stone", qty=3} },
-		outputs = { {id="StonePickaxe", qty=1} },
-		time = 0,
-	},
-}
+local RecipeDB = require(Shared:WaitForChild("RecipeDB"))
 
 local CraftingService = {}
 
@@ -43,9 +30,8 @@ end
 -- ===== Core Helper: Check if recipe outputs can fit in inventory =====
 local function canFitOutputs(player, recipe)
 	local slots = InventoryService.GetSlots(player)
-	if not slots then 
-		-- ...existing code...
-		return false 
+	if not slots then
+		return false
 	end
 
 	-- Simulate each output: can it fit?
@@ -55,7 +41,6 @@ local function canFitOutputs(player, recipe)
 		local def = ItemDB[itemId]
 		
 		if not def then
-			-- ...existing code...
 			return false
 		end
 
@@ -90,12 +75,10 @@ local function canFitOutputs(player, recipe)
 
 		-- If anything left, cannot fit
 		if remaining > 0 then
-			-- ...existing code...
 			return false
 		end
 	end
 
-	-- ...existing code...
 	return true
 end
 
@@ -111,7 +94,6 @@ function CraftingService.OpenBench(player: Player, benchInstance: Instance): (bo
 		t = now(),
 	}
 
-	-- ...existing code...
 	return true, Contracts.Error.OK
 end
 
@@ -179,14 +161,12 @@ function CraftingService.HandleCraftRequest(player: Player, payload: table): tab
 		end
 
 		if have < input.qty then
-			-- ...existing code...
 			return ack(rid, false, Contracts.Error.NOT_ENOUGH_ITEMS, ("need %s x%d"):format(input.id, input.qty))
 		end
 	end
 
 	-- 2. Check if outputs can fit (BEFORE consuming)
 	if not canFitOutputs(player, recipe) then
-		-- ...existing code...
 		return ack(rid, false, Contracts.Error.INVENTORY_FULL, "inventory_full")
 	end
 
@@ -195,30 +175,24 @@ function CraftingService.HandleCraftRequest(player: Player, payload: table): tab
 	-- Consume inputs (negative qty for InventoryService.AddItem)
 	for _, input in ipairs(recipe.inputs) do
 		InventoryService.AddItem(player, input.id, -input.qty)
-		-- ...existing code...
 	end
 
 	-- Grant outputs
 	for _, output in ipairs(recipe.outputs) do
-		local ok = InventoryService.AddItem(player, output.id, output.qty)
-		if not ok then
-			-- ...existing code...
-		end
-		-- ...existing code...
+		InventoryService.AddItem(player, output.id, output.qty)
 	end
 
-	-- ...existing code...
 	return ack(rid, true, Contracts.Error.OK, nil, { recipe=recipeName })
 end
 
 ----- ===== Init =====
 
 function CraftingService:Init()
-	Net.Register(Contracts.Remotes)
+	Net.Register({ Contracts.Remotes.Request, Contracts.Remotes.Ack })
 
-	Net.On("Craft_Request", function(player, payload)
+	Net.On(Contracts.Remotes.Request, function(player, payload)
 		local res = CraftingService.HandleCraftRequest(player, payload)
-		Net.Fire("Craft_Ack", player, res)
+		Net.Fire(Contracts.Remotes.Ack, player, res)
 	end)
 
 	print("[CraftingService] ready")

@@ -1,6 +1,5 @@
 -- InventoryController.lua
--- Phase 1-6 (UX Improvement)
--- Manages client-side inventory state and input.
+-- Client-side inventory state manager with toggle, swap, drop
 
 local UserInputService = game:GetService("UserInputService")
 local ContextActionService = game:GetService("ContextActionService")
@@ -13,32 +12,45 @@ local InventoryController = {}
 
 -- State
 local isOpen = false
-local inventoryData = {} -- [slotIndex] = { ItemId, Qty, ... }
+local inventoryData = {} -- [slotIndex] = { ItemId, Qty }
 
 function InventoryController:Init()
 	-- Listen for Sync from Server
 	Net.On(Contracts.Remotes.Update, function(payload)
-		inventoryData = payload.slots
-		print("[InventoryController] updated local data")
-		
-		-- Notify UI
-		local InventoryUI = require(script.Parent.Parent.UI.InventoryUI)
-		InventoryUI.Refresh(inventoryData)
-		
-		-- Also update Hotbar if it needs it
-		local HotbarUI = require(script.Parent.Parent.UI.HotbarUI)
-		if HotbarUI.Refresh then
+		inventoryData = payload.slots or {}
+
+		-- Update Inventory UI
+		local ok1, InventoryUI = pcall(function()
+			return require(script.Parent.Parent.UI.InventoryUI)
+		end)
+		if ok1 and InventoryUI and InventoryUI.Refresh then
+			InventoryUI.Refresh(inventoryData)
+		end
+
+		-- Update Hotbar UI (slots 1-9)
+		local ok2, HotbarUI = pcall(function()
+			return require(script.Parent.Parent.UI.HotbarUI)
+		end)
+		if ok2 and HotbarUI and HotbarUI.Refresh then
 			HotbarUI.Refresh(inventoryData)
+		end
+
+		-- Update Crafting UI availability
+		local ok3, CraftingUI = pcall(function()
+			return require(script.Parent.Parent.UI.CraftingUI)
+		end)
+		if ok3 and CraftingUI and CraftingUI.UpdateInventory then
+			CraftingUI.UpdateInventory(inventoryData)
 		end
 	end)
 
-	-- Input Toggle with ContextActionService
+	-- Toggle with Tab or I
 	ContextActionService:BindActionAtPriority(
 		"ToggleInventory",
 		function(actionName, inputState, inputObject)
 			if inputState == Enum.UserInputState.Begin then
 				InventoryController.Toggle()
-				return Enum.ContextActionResult.Sink -- Prevent default Roblox behavior (e.g. PlayerList)
+				return Enum.ContextActionResult.Sink
 			end
 			return Enum.ContextActionResult.Pass
 		end,
@@ -48,35 +60,42 @@ function InventoryController:Init()
 		Enum.KeyCode.I
 	)
 
-	-- Request initial sync
-	-- Adding a small delay to ensure UI is ready
-	task.delay(1, function()
+	-- Request initial sync (with delay to ensure server is ready)
+	task.delay(1.5, function()
 		Net.Fire(Contracts.Remotes.SyncRequest)
 	end)
-
-	print("[InventoryController] ready")
 end
 
 function InventoryController.Toggle()
 	isOpen = not isOpen
-	local InventoryUI = require(script.Parent.Parent.UI.InventoryUI)
-	InventoryUI.SetVisible(isOpen)
-	
-	-- Toggle Mouse
-	UserInputService.MouseIconEnabled = isOpen
+	local ok, InventoryUI = pcall(function()
+		return require(script.Parent.Parent.UI.InventoryUI)
+	end)
+	if ok and InventoryUI then
+		InventoryUI.SetVisible(isOpen)
+	end
+
 	if isOpen then
-		UserInputService.MouseBehavior = Enum.MouseBehavior.Default
-		-- Disable PlayerList to avoid clutter if Tab was used
-		pcall(function() game.StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, false) end)
+		pcall(function()
+			game.StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, false)
+		end)
 	else
-		-- Don't force LockCenter, let standard controls or other controllers decide
-		-- UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter 
-		pcall(function() game.StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, true) end)
+		pcall(function()
+			game.StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, true)
+		end)
 	end
 end
 
-function InventoryController.RequestSwap(from, to)
-	Net.Fire(Contracts.Remotes.SwapRequest, { fromIdx = from, toIdx = to })
+function InventoryController.RequestSwap(fromIdx, toIdx)
+	Net.Fire(Contracts.Remotes.SwapRequest, { fromIdx = fromIdx, toIdx = toIdx })
+end
+
+function InventoryController.RequestDrop(slotIdx)
+	Net.Fire(Contracts.Remotes.DropRequest, { slotIdx = slotIdx })
+end
+
+function InventoryController.GetData()
+	return inventoryData
 end
 
 return InventoryController

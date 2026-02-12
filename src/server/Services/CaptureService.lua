@@ -24,12 +24,12 @@ function CaptureService.TryCapture(player, targetModel)
 	if not hum or hum.Health <= 0 then return false, "TARGET_DEAD" end
 	
 	-- Calculate Chance (Palworld style: lower HP = higher chance)
-	local hpRatio = hum.Health / hum.MaxHP
+	local hpRatio = hum.Health / hum.MaxHealth
 	local baseChance = 0.3 -- 30% base
 	local chance = baseChance + (1 - hpRatio) * 0.6 -- Up to 90% at low HP
 	
 	local roll = math.random()
-	print(("[Capture] Player %s roll %.2f vs chance %.2f (HP Ratio: %.2f)"):format(player.Name, roll, chance, hpRatio))
+	-- print(("[Capture] Player %s roll ..."):format(player.Name))
 	
 	if roll <= chance then
 		-- SUCCESS
@@ -65,12 +65,11 @@ function CaptureService.OnSuccess(player, targetModel)
 	local save = SaveService.Get(player)
 	if save and save.Pals then
 		table.insert(save.Pals.Palbox, palData)
-		print(("[Capture] %s added to %s's Palbox"):format(aiName, player.Name))
 	end
 	
 	-- 3. Visuals & Removal
 	-- Broadcast capture effect (TBD: EffectService)
-	Net.Fire("Effect_Capture", nil, { pos = targetModel:GetPivot().Position, success = true })
+	Net.Broadcast("Effect_Capture", { pos = targetModel:GetPivot().Position, success = true })
 	
 	-- Destroy the AI
 	targetModel:Destroy()

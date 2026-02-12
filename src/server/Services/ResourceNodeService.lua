@@ -109,9 +109,7 @@ function ResourceNodeService.SpawnResourceNode(position: Vector3, nodeType: stri
 	local entityId = nodeModel:GetAttribute(Attr.EntityId)
 	nodeRegistry[entityId] = createNodeState(nodeModel, nodeType)
 
-	print(("[ResourceNodeService] Spawned %s at %s (hp=%d, itemId=%s, qty=%d)"):format(
-		nodeType, tostring(position), hp, itemId, qty
-	))
+	-- print(("[ResourceNodeService] Spawned %s at %s (hp=%d, itemId=%s, qty=%d)"):format(nodeType, tostring(position), hp, itemId, qty))
 
 	return nodeModel
 end
@@ -164,13 +162,11 @@ function ResourceNodeService.TryHarvest(player: Player, nodeModel: Model, toolDa
 	
 	FeedbackService.ShowDamage(part.Position + Vector3.new(math.random(-1,1), 2, math.random(-1,1)), finalDmg, "Resource")
 
-	print(("[ResourceNode] %s used %s(pow=%d) on %s -> dmg %d (eff: %.1f)"):format(
-		player.Name, toolType, toolPower, part.Name, finalDmg, multiplier
-	))
+	-- print(("[ResourceNode] %s used %s(pow=%d) on %s -> dmg %d (eff: %.1f)"):format(player.Name, toolType, toolPower, part.Name, finalDmg, multiplier))
 
 	-- Check if depleted
 	if newHp <= 0 then
-		print(("[ResourceNode] depleted %s"):format(part.Name))
+		-- print(("[ResourceNode] depleted %s"):format(part.Name))
 
 		-- Spawn drop
 		if itemId and qty and qty > 0 then

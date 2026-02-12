@@ -152,12 +152,12 @@ function DropService.SpawnDrop(position: Vector3, itemId: string, qty: number, o
 	CollectionService:AddTag(p, DROP_TAG)
 	CollectionService:AddTag(p, "Interactable") -- For Interact Check
 
-	print(("[Drop] spawned %s x%d id=%s owner=%d"):format(itemId, qty, dropId, ownerUserId or 0))
+	-- print(("[Drop] spawned %s x%d id=%s owner=%d"):format(itemId, qty, dropId, ownerUserId or 0))
 
 	-- TTL cleanup
 	task.delay(TTL_SECONDS, function()
 		if p and p.Parent then
-			print(("[Drop] ttl expired id=%s"):format(dropId))
+			-- print(("[Drop] ttl expired id=%s"):format(dropId))
 			p:Destroy()
 		end
 	end)
@@ -205,7 +205,7 @@ function DropService.TryPickup(player: Player, rid: string)
 		return ack(rid, false, "INVENTORY_FULL", "cannot add item", { itemId=itemId, qty=qty })
 	end
 
-	print(("[Drop] picked up by %s: %s x%d (id=%s)"):format(player.Name, itemId, qty, tostring(info.DropId)))
+	-- print(("[Drop] picked up by %s: %s x%d (id=%s)"):format(player.Name, itemId, qty, tostring(info.DropId)))
 	drop:Destroy()
 
 	return ack(rid, true, "OK", nil, { itemId=itemId, qty=qty })

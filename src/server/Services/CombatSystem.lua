@@ -132,13 +132,7 @@ function CombatSystem.AttackRequest(player: Player, rid: string, data: table)
 		end
 	end
 
-	print(("[Combat] %s hit=%s dmg=%d hp %.1f->%.1f"):format(
-		player.Name,
-		model:GetFullName(),
-		MELEE_DAMAGE,
-		before,
-		after
-	))
+	-- print(("[Combat] %s hit=%s dmg=%d hp %.1f->%.1f"):format(player.Name, model:GetFullName(), MELEE_DAMAGE, before, after))
 
 	return ack(rid, true, "OK", nil, {
 		hit=true,
