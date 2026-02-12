@@ -56,7 +56,10 @@ function StonePickaxe.OnUse(ctx)
 		return true, "OK", { hit = true, result = "NOT_RESOURCE_NODE" }
 	end
 
-	local ok, code = ResourceNodeService.TryHarvest(player, target)
+	-- Call TryHarvest
+	-- Phase 1-3: Pass tool data
+	local toolData = { ToolType="Pickaxe", Power=20 }
+	local ok, code = ResourceNodeService.TryHarvest(player, target, toolData)
 	if not ok then
 		return false, code or "HARVEST_FAIL"
 	end

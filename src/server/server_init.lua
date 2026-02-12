@@ -81,290 +81,163 @@ else
 end
 print("[CraftingService] ready")
 
--- === Phase0-7 TEST HARNESS (임시: 테스트 후 삭제 예정) ===
--- 목적: Terrain/지형이 레이를 먼저 맞는 문제를 제거하기 위해,
---       TestInteract를 "플레이어 HRP 기준"으로 근처에 스폰한다.
-task.delay(1, function()
-	if workspace:FindFirstChild("TestInteract") then return end
+-- 10. HotbarService (Phase 1-4-1)
+local HotbarService = require(script.Parent.Services.HotbarService)
+if HotbarService.Init then
+	HotbarService:Init()
+else
+	warn("[HotbarService] missing Init()")
+end
+print("[HotbarService] ready")
 
-	-- 플레이어/캐릭터 준비
-	local player = Players:GetPlayers()[1]
-	if not player then
-		warn("[InteractTest] no players yet")
-		return
-	end
+-- 11. UseService (Phase 1-4-2)
+local UseService = require(script.Parent.Services.UseService)
+if UseService.Init then
+	UseService:Init()
+else
+	warn("[UseService] missing Init()")
+end
+print("[UseService] ready")
 
+-- === Phase 1 Test Playground ===
+local function createLabel(parent, text, color)
+	local sg = Instance.new("SurfaceGui")
+	sg.Face = Enum.NormalId.Top
+	sg.CanvasSize = Vector2.new(200, 50)
+	sg.Parent = parent
+	
+	local lbl = Instance.new("TextLabel")
+	lbl.Size = UDim2.new(1, 0, 1, 0)
+	lbl.BackgroundTransparency = 1
+	lbl.Text = text
+	lbl.TextColor3 = color or Color3.new(1, 1, 1)
+	lbl.TextScaled = true
+	lbl.Font = Enum.Font.FredokaOne
+	lbl.Parent = sg
+	return sg
+end
+
+local function SetupTestPlayground(player)
+	print("[Playground] Setting up Phase 1 Test Area for " .. player.Name)
+	
+	-- Wait for Character
 	local char = player.Character or player.CharacterAdded:Wait()
 	local hrp = char:WaitForChild("HumanoidRootPart")
+	task.wait(1)
 
-	-- 테스트 파트 생성
-	local p = Instance.new("Part")
-	p.Name = "TestInteract"
-	p.Anchored = true
-	p.CanCollide = false
-	p.Transparency = 0.2
-	p.Size = Vector3.new(4, 4, 1)
-
-	--  HRP 기준: 정면 8m + 위로 2m (지형/바닥 선행 히트 최소화)
-local pos = hrp.Position + Vector3.new(0, 6, 0)
-p.CFrame = CFrame.new(pos)
-
-
-	p.Parent = workspace
-
-	p:SetAttribute("InteractType", "TestBox")
-	CollectionService:AddTag(p, "Interactable")
-
-	print("[InteractTest] spawned TestInteract near player at", p.Position)
-end)
-
--- === Phase0-8 TEST HARNESS (임시: 테스트 후 삭제) ===
-task.delay(2, function()
-	-- 플레이어 HRP 근처에 Wood 드랍 하나 생성
-	local Players = game:GetService("Players")
-	local p = Players:GetPlayers()[1]
-	if not p then return end
-
-	local char = p.Character or p.CharacterAdded:Wait()
-	local hrp = char:WaitForChild("HumanoidRootPart")
-
-	local DropService = require(script.Parent.Services.DropService)
-	DropService.SpawnDrop(hrp.Position + Vector3.new(0, 0, 6), "Stone", 1, p.UserId)
-end)
-
--- === Phase0-9 TEST HARNESS (임시: 테스트 후 삭제) ===
-task.delay(3, function()
-	local Players = game:GetService("Players")
-	local p = Players:GetPlayers()[1]
-	if not p then return end
-
-	local EffectService = require(script.Parent.Services.EffectService)
-	EffectService.Apply(p, "Burn", 5, 1) -- 5초, 1스택
-end)
-
--- === Phase0-10 TEST HARNESS (임시: 테스트 후 삭제) ===
-task.delay(2, function()
-	if workspace:FindFirstChild("TestDummy") then return end
-
-	local player = Players:GetPlayers()[1]
-	if not player then
-		warn("[CombatTest] no players yet")
-		return
-	end
-
-	local char = player.Character or player.CharacterAdded:Wait()
-	local phrp = char:WaitForChild("HumanoidRootPart")
-
-	-- ✅ Model로 생성 (정석)
-	local dummy = Instance.new("Model")
-	dummy.Name = "TestDummy"
-
-	local hrp = Instance.new("Part")
-	hrp.Name = "HumanoidRootPart"
-	hrp.Size = Vector3.new(2, 2, 1)
-	hrp.Anchored = true
-	hrp.CanCollide = false
-	hrp.Parent = dummy
-
-	local head = Instance.new("Part")
-	head.Name = "Head"
-	head.Size = Vector3.new(2, 1, 1)
-	head.Anchored = true
-	head.CanCollide = false
-	head.Parent = dummy
-
-	-- ✅ 플레이어 근처에 스폰 (랜덤 스폰 문제 제거)
-	hrp.Position = phrp.Position + Vector3.new(0, 0, -8)
-	head.Position = hrp.Position + Vector3.new(0, 2, 0)
-
-	local hum = Instance.new("Humanoid")
-	hum.MaxHealth = 100
-	hum.Health = 100
-	hum.Parent = dummy
-
-	-- ✅ 태그는 "맞는 파트"에도 붙인다 (hit.Instance가 hrp/head로 올 수 있음)
-	CollectionService:AddTag(dummy, "Entity")
-	CollectionService:AddTag(hrp, "Entity")
-	CollectionService:AddTag(head, "Entity")
-
-	CollectionService:AddTag(dummy, "Damageable")
-	CollectionService:AddTag(hrp, "Damageable")
-	CollectionService:AddTag(head, "Damageable")
-
-	-- ✅ HP Attribute는 “Damageable로 판정되는 파트”에도 복제(CombatSystem이 어디를 읽을지 모름)
-	hrp:SetAttribute("HP", 100)
-	hrp:SetAttribute("MaxHP", 100)
-	head:SetAttribute("HP", 100)
-	head:SetAttribute("MaxHP", 100)
-
-	dummy.Parent = workspace
-
-	print("[CombatTest] spawned TestDummy near player at", hrp.Position)
-end)
-
--- === Phase0-11 TEST HARNESS (AI Framework test) ===
-task.delay(5, function()
-	if workspace:FindFirstChild("TestAI") then return end
-
-	local player = Players:GetPlayers()[1]
-	if not player then
-		warn("[AITest] no players yet")
-		return
-	end
-
-	local char = player.Character or player.CharacterAdded:Wait()
-	local phrp = char:WaitForChild("HumanoidRootPart")
-
-	local AIService = require(script.Parent.Services.AIService)
-
-	-- Spawn AI near player (offset)
-	local spawnPos = phrp.Position + Vector3.new(0, 0, 12) -- 12 studs ahead
-	local aiModel = AIService.SpawnAI(spawnPos, player, {
-		Name = "TestAI",
-		MaxHP = 50,
-		Faction = "Enemy",
-	})
-
-	if aiModel then
-		print("[AITest] spawned AI, should begin Chase→Attack cycle")
-		print("[AITest] watch server logs for:")
-		print("  [AI] TestAI Chase: dist=...")
-		print("  [AI] TestAI Attack: hit=...")
-	end
-end)
-
--- === Phase1-1 TEST HARNESS (ResourceNode test) ===
-task.delay(6, function()
-	if workspace:FindFirstChild("TestTree") then return end
-
-	local player = Players:GetPlayers()[1]
-	if not player then
-		warn("[ResourceNodeTest] no players yet")
-		return
-	end
-
-	local char = player.Character or player.CharacterAdded:Wait()
-	local phrp = char:WaitForChild("HumanoidRootPart")
-
-	local ResourceNodeService = require(script.Parent.Services.ResourceNodeService)
-
-	-- Spawn Tree near player
-	local treePos = phrp.Position + Vector3.new(5, 0, 0)
-	local tree = ResourceNodeService.SpawnResourceNode(treePos, "Tree", {})
-
-	-- Spawn Stone
-	local stonePos = phrp.Position + Vector3.new(-5, 0, 0)
-	local stone = ResourceNodeService.SpawnResourceNode(stonePos, "Stone", {})
-
-	if tree and stone then
-		print("[ResourceNodeTest] spawned Tree and Stone")
-		print("[ResourceNodeTest] interact with E key to harvest")
-		print("[ResourceNodeTest] watch for:")
-		print("  [ResourceNode] hit Tree hp ...")
-		print("  [ResourceNode] depleted Tree")
-		print("  [Drop] spawned Wood ...")
-	end
-end)
-
--- === Phase1-2 TEST HARNESS (Crafting test) ===
-task.delay(7, function()
-	if workspace:FindFirstChild("TestCraftBench") then return end
-
-	local player = Players:GetPlayers()[1]
-	if not player then
-		warn("[CraftBenchTest] no players yet")
-		return
-	end
-
-	local char = player.Character or player.CharacterAdded:Wait()
-	local phrp = char:WaitForChild("HumanoidRootPart")
-
-	-- 1. Add minimal initial inventory items for testing (with empty slot for output)
-	local InventoryService = require(script.Parent.Services.InventoryService)
-	-- Only add what's needed for crafting, leave slots empty for output
-	local SaveService = require(script.Parent.Services.SaveService)
-	local inv = SaveService.Get(player).Inventory.Slots
+	-- Base Position (offset from player spawn)
+	local origin = hrp.Position + Vector3.new(0, 0, -20)
 	
-	-- Clear any existing items
-	for i=1,30 do inv[i] = nil end
+	-- 1. Equipment Station
+	local equipZone = Instance.new("Part")
+	equipZone.Name = "Zone_Equip"
+	equipZone.Size = Vector3.new(10, 1, 10)
+	equipZone.Position = origin + Vector3.new(0, -1, 0)
+	equipZone.Anchored = true
+	equipZone.Color = Color3.fromRGB(50, 50, 50)
+	equipZone.Parent = workspace
+	createLabel(equipZone, "Equipment (Check Hotbar)", Color3.new(1, 0.8, 0))
 	
-	-- Add exact amounts needed for test
-	InventoryService.AddItem(player, "Wood", 3)
-	InventoryService.AddItem(player, "Stone", 2)
-	print("[CraftBenchTest] cleared inventory and added Wood x3, Stone x2 (empty slots available)")
-
-	-- 2. Create TestCraftBench part
-	local bench = Instance.new("Part")
-	bench.Name = "TestCraftBench"
-	bench.Size = Vector3.new(4, 1, 4)
-	bench.Anchored = true
-	bench.CanCollide = false
-	bench.BrickColor = BrickColor.new("Dark stone grey")
-	bench.Position = phrp.Position + Vector3.new(0, 0, 8)
-	bench:SetAttribute("InteractType", "CraftBench")
-	CollectionService:AddTag(bench, "Interactable")
-	bench.Parent = workspace
-
-	print("[CraftBenchTest] spawned bench near player at", bench.Position)
-	print("[CraftBenchTest] interact with E key to open bench")
-	print("[CraftBenchTest] then client sends Craft_Request")
-end)
-
--- === Phase1-3 TEST HARNESS (Tool/Weapon test) ===
-task.delay(8, function()
-	if workspace:FindFirstChild("Phase1-3Test") then return end
-
-	local player = Players:GetPlayers()[1]
-	if not player then
-		warn("[Phase1-3Test] no players yet")
-		return
-	end
-
-	local char = player.Character or player.CharacterAdded:Wait()
-	local phrp = char:WaitForChild("HumanoidRootPart")
-
-	-- 1. Clear and equip tools
-	local InventoryService = require(script.Parent.Services.InventoryService)
-	local EquipService = require(script.Parent.Services.EquipService)
-	local SaveService = require(script.Parent.Services.SaveService)
-	local save = SaveService.Get(player)
-	local inv = save.Inventory.Slots
-	local equip = save.Inventory.Equip
-
-	-- Clear inventory
-	for i=1,30 do inv[i] = nil end
-	for k,v in pairs(equip) do equip[k] = nil end
-
-	-- Add tools: StoneAxe, StonePickaxe, StoneSword
+	-- Give Items
 	InventoryService.AddItem(player, "StoneAxe", 1)
 	InventoryService.AddItem(player, "StonePickaxe", 1)
 	InventoryService.AddItem(player, "StoneSword", 1)
-	print("[Phase1-3Test] added StoneAxe, StonePickaxe, StoneSword to inventory")
-
-	-- Auto-equip StoneSword to Weapon slot for testing
-	equip["Weapon"] = { ItemId="StoneSword", Qty=1 }
-	print("[Phase1-3Test] auto-equipped StoneSword to Weapon slot")
-
-	-- 2. Spawn ResourceNode (for Axe/Pickaxe test)
-	local resourceNodeService = require(script.Parent.Services.ResourceNodeService)
-	local nodeSpawn = phrp.Position + Vector3.new(0, 0, -5)
-	local testNode = resourceNodeService.SpawnResourceNode(nodeSpawn, "Stone")
-	if testNode then
-		print("[Phase1-3Test] spawned ResourceNode at", testNode:GetPrimaryPartCFrame().Position)
+	HotbarService.Select(player, 1) -- Auto select Axe
+	
+	-- 2. Tree Zone (Left)
+	local treeZonePos = origin + Vector3.new(-15, 0, 0)
+	for i = 1, 3 do
+		local pos = treeZonePos + Vector3.new(math.random(-5, 5), 0, math.random(-5, 5))
+		local tree = ResourceNodeService.SpawnResourceNode(pos, "Tree")
+		if tree then
+			local labelPart = tree.PrimaryPart:Clone()
+			labelPart.Size = Vector3.new(4, 0.1, 4)
+			labelPart.Position = tree.PrimaryPart.Position + Vector3.new(0, 3, 0)
+			labelPart.Transparency = 1
+			labelPart.CanCollide = false
+			labelPart.Parent = tree
+			createLabel(labelPart, "Tree (HP:50)", Color3.new(0, 1, 0))
+		end
 	end
+	
+	-- 3. Stone Zone (Right)
+	local stoneZonePos = origin + Vector3.new(15, 0, 0)
+	for i = 1, 3 do
+		local pos = stoneZonePos + Vector3.new(math.random(-5, 5), 0, math.random(-5, 5))
+		local stone = ResourceNodeService.SpawnResourceNode(pos, "Stone")
+		if stone then
+			local labelPart = stone.PrimaryPart:Clone()
+			labelPart.Size = Vector3.new(4, 0.1, 4)
+			labelPart.Position = stone.PrimaryPart.Position + Vector3.new(0, 3, 0)
+			labelPart.Transparency = 1
+			labelPart.CanCollide = false
+			labelPart.Parent = stone
+			createLabel(labelPart, "Stone (HP:40)", Color3.new(0.5, 0.5, 0.5))
+		end
+	end
+	
+	-- 4. Combat Zone (Forward)
+	local combatZonePos = origin + Vector3.new(0, 0, -20)
+	
+	-- Dummy
+	local dummy = Instance.new("Model")
+	dummy.Name = "TestDummy"
+	local dPart = Instance.new("Part")
+	dPart.Name = "HumanoidRootPart"
+	dPart.Size = Vector3.new(2, 5, 2)
+	dPart.Position = combatZonePos
+	dPart.Anchored = true
+	dPart.Color = Color3.new(1, 0, 0)
+	dPart.Parent = dummy
+	-- Assuming EntityService is available or needs to be required
+	local EntityService = require(script.Parent.Services.EntityService) -- Added this line, assuming it's needed
+	EntityService.CreateEntity(dummy, { HP = 100, MaxHP = 100, Faction = "Enemy" })
+	CollectionService:AddTag(dummy, "Damageable")
+	CollectionService:AddTag(dPart, "Damageable")
+	dummy.Parent = workspace
+	createLabel(dPart, "Dummy (HP:100)", Color3.new(1, 0, 0))
+	
+	-- AI (Active)
+	local AIService = require(script.Parent.Services.AIService)
+	local ai = AIService.SpawnAI(combatZonePos + Vector3.new(10, 0, 0), "TestAI")
+	if ai then
+		createLabel(ai.PrimaryPart, "AI Attacker", Color3.new(1, 0, 0))
+	end
+	
+	-- 5. Loot & Craft Zone (Back)
+	local lootPos = origin + Vector3.new(0, 0, 10)
+	DropService.SpawnDrop(lootPos + Vector3.new(-2, 0, 0), "Wood", 5)
+	DropService.SpawnDrop(lootPos + Vector3.new(2, 0, 0), "Stone", 5)
+	
+	local lootZone = Instance.new("Part")
+	lootZone.Name = "Zone_Loot"
+	lootZone.Size = Vector3.new(8, 0.1, 4)
+	lootZone.Position = lootPos
+	lootZone.Anchored = true
+	lootZone.Transparency = 1
+	lootZone.CanCollide = false
+	lootZone.Parent = workspace
+	createLabel(lootZone, "Loot (Press E)", Color3.new(0, 1, 1))
+	
+	-- Craft Bench
+	local bench = Instance.new("Part")
+	bench.Name = "CraftBench"
+	bench.Size = Vector3.new(4, 2, 2)
+	bench.Position = lootPos + Vector3.new(0, 1, 5)
+	bench.Anchored = true
+	bench.Color = Color3.fromRGB(139, 69, 19)
+	bench.Parent = workspace
+	bench:SetAttribute("InteractType", "CraftBench")
+	CollectionService:AddTag(bench, "Interactable")
+	createLabel(bench, "Craft Bench (Press E)", Color3.new(1, 1, 1))
 
-	-- 3. Mark this test session
-	local marker = Instance.new("BoolValue")
-	marker.Name = "Phase1-3Test"
-	marker.Parent = workspace
-	game:GetService("Debris"):AddItem(marker, 120) -- Remove after 2 minutes
+	print("[Playground] Setup Complete!")
+end
 
-	print("[Phase1-3Test] setup complete")
-	print("[Phase1-3Test] Test instructions:")
-	print("  1. Equip StoneAxe and use (E+Click) on stone node")
-	print("  2. Equip StonePickaxe and use on stone node")
-	print("  3. Equip StoneSword and use (E+Click) on dummy")
-	print("  Expected: [ResourceNode] hit/depleted, [Combat] hit logs")
+Players.PlayerAdded:Connect(function(player)
+	player.CharacterAdded:Connect(function(char)
+		SetupTestPlayground(player)
+	end)
 end)
 
 return true
