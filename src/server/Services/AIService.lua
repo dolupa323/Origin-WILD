@@ -268,7 +268,8 @@ function AIService.SpawnAI(position: Vector3, targetPlayer: Player, opts: table?
 
 	-- Create Model
 	local aiModel = Instance.new("Model")
-	aiModel.Name = opts.Name or "AI_" .. targetPlayer.Name
+	local targetName = (targetPlayer and targetPlayer.Name) or "Unknown"
+	aiModel.Name = opts.Name or "AI_" .. targetName
 
 	-- Create HumanoidRootPart
 	local hrp = Instance.new("Part")

@@ -5,8 +5,8 @@ local Players = game:GetService("Players")
 local CollectionService = game:GetService("CollectionService")
 
 -- 1. Base Services
-require(script.Parent.Services.SaveService)
-require(script.Parent.Services.InventoryService)
+local SaveService = require(script.Parent.Services.SaveService)
+local InventoryService = require(script.Parent.Services.InventoryService)
 print("[InventoryService] ready")
 
 -- 2. EquipService
@@ -125,113 +125,95 @@ local function SetupTestPlayground(player)
 	local hrp = char:WaitForChild("HumanoidRootPart")
 	task.wait(1)
 
-	-- Base Position (offset from player spawn)
-	local origin = hrp.Position + Vector3.new(0, 0, -20)
+	-- Base Position (Facing direction of player, at player's foot level)
+	local spawnCFrame = hrp.CFrame * CFrame.new(0, -3, -20) -- 20 studs in front, 3 studs down (feet)
+	local origin = spawnCFrame.Position
 	
-	-- 1. Equipment Station
+	-- 1. Equipment Station (Platform) - Make it big and bright so it's visible
 	local equipZone = Instance.new("Part")
 	equipZone.Name = "Zone_Equip"
-	equipZone.Size = Vector3.new(10, 1, 10)
-	equipZone.Position = origin + Vector3.new(0, -1, 0)
+	equipZone.Size = Vector3.new(40, 1, 40)
+	equipZone.CFrame = spawnCFrame * CFrame.new(0, -0.5, 0)
 	equipZone.Anchored = true
-	equipZone.Color = Color3.fromRGB(50, 50, 50)
+	equipZone.Color = Color3.fromRGB(60, 60, 70)
+	equipZone.Material = Enum.Material.Concrete
 	equipZone.Parent = workspace
-	createLabel(equipZone, "Equipment (Check Hotbar)", Color3.new(1, 0.8, 0))
+	createLabel(equipZone, "--- PHASE 1 TEST SANDBOX ---", Color3.new(1, 1, 0))
+	
+	print("[Playground] Spawned at: " .. tostring(origin))
 	
 	-- Give Items
 	InventoryService.AddItem(player, "StoneAxe", 1)
 	InventoryService.AddItem(player, "StonePickaxe", 1)
 	InventoryService.AddItem(player, "StoneSword", 1)
-	HotbarService.Select(player, 1) -- Auto select Axe
+	HotbarService.Select(player, 1)
 	
 	-- 2. Tree Zone (Left)
-	local treeZonePos = origin + Vector3.new(-15, 0, 0)
+	local treeZonePos = origin + (spawnCFrame.RightVector * -15)
 	for i = 1, 3 do
 		local pos = treeZonePos + Vector3.new(math.random(-5, 5), 0, math.random(-5, 5))
 		local tree = ResourceNodeService.SpawnResourceNode(pos, "Tree")
-		if tree then
-			local labelPart = tree.PrimaryPart:Clone()
-			labelPart.Size = Vector3.new(4, 0.1, 4)
-			labelPart.Position = tree.PrimaryPart.Position + Vector3.new(0, 3, 0)
-			labelPart.Transparency = 1
-			labelPart.CanCollide = false
-			labelPart.Parent = tree
-			createLabel(labelPart, "Tree (HP:50)", Color3.new(0, 1, 0))
+		if tree and tree.PrimaryPart then
+			createLabel(tree.PrimaryPart, "🌲 Tree", Color3.new(0, 1, 0))
 		end
 	end
 	
 	-- 3. Stone Zone (Right)
-	local stoneZonePos = origin + Vector3.new(15, 0, 0)
+	local stoneZonePos = origin + (spawnCFrame.RightVector * 15)
 	for i = 1, 3 do
 		local pos = stoneZonePos + Vector3.new(math.random(-5, 5), 0, math.random(-5, 5))
 		local stone = ResourceNodeService.SpawnResourceNode(pos, "Stone")
-		if stone then
-			local labelPart = stone.PrimaryPart:Clone()
-			labelPart.Size = Vector3.new(4, 0.1, 4)
-			labelPart.Position = stone.PrimaryPart.Position + Vector3.new(0, 3, 0)
-			labelPart.Transparency = 1
-			labelPart.CanCollide = false
-			labelPart.Parent = stone
-			createLabel(labelPart, "Stone (HP:40)", Color3.new(0.5, 0.5, 0.5))
+		if stone and stone.PrimaryPart then
+			createLabel(stone.PrimaryPart, "🪨 Stone", Color3.new(0.6, 0.6, 0.6))
 		end
 	end
 	
 	-- 4. Combat Zone (Forward)
-	local combatZonePos = origin + Vector3.new(0, 0, -20)
+	local combatZonePos = origin + (spawnCFrame.LookVector * 10)
 	
 	-- Dummy
 	local dummy = Instance.new("Model")
 	dummy.Name = "TestDummy"
 	local dPart = Instance.new("Part")
 	dPart.Name = "HumanoidRootPart"
-	dPart.Size = Vector3.new(2, 5, 2)
-	dPart.Position = combatZonePos
+	dPart.Size = Vector3.new(2, 6, 2)
+	dPart.Position = combatZonePos + Vector3.new(0, 3, 0)
 	dPart.Anchored = true
-	dPart.Color = Color3.new(1, 0, 0)
+	dPart.Color = Color3.new(0.8, 0.2, 0.2)
 	dPart.Parent = dummy
-	-- Assuming EntityService is available or needs to be required
-	local EntityService = require(script.Parent.Services.EntityService) -- Added this line, assuming it's needed
+	dummy.Parent = workspace
+	
+	local EntityService = require(script.Parent.Services.EntityService)
 	EntityService.CreateEntity(dummy, { HP = 100, MaxHP = 100, Faction = "Enemy" })
 	CollectionService:AddTag(dummy, "Damageable")
 	CollectionService:AddTag(dPart, "Damageable")
-	dummy.Parent = workspace
-	createLabel(dPart, "Dummy (HP:100)", Color3.new(1, 0, 0))
+	createLabel(dPart, "🎯 Target Dummy", Color3.new(1, 0, 0))
 	
 	-- AI (Active)
 	local AIService = require(script.Parent.Services.AIService)
-	local ai = AIService.SpawnAI(combatZonePos + Vector3.new(10, 0, 0), "TestAI")
+	local ai = AIService.SpawnAI(combatZonePos + (spawnCFrame.RightVector * 8), player, { Name = "OrcAI" })
 	if ai then
-		createLabel(ai.PrimaryPart, "AI Attacker", Color3.new(1, 0, 0))
+		createLabel(ai.PrimaryPart, "👹 Aggressive AI", Color3.new(1, 0.2, 0.2))
 	end
 	
-	-- 5. Loot & Craft Zone (Back)
-	local lootPos = origin + Vector3.new(0, 0, 10)
-	DropService.SpawnDrop(lootPos + Vector3.new(-2, 0, 0), "Wood", 5)
-	DropService.SpawnDrop(lootPos + Vector3.new(2, 0, 0), "Stone", 5)
-	
-	local lootZone = Instance.new("Part")
-	lootZone.Name = "Zone_Loot"
-	lootZone.Size = Vector3.new(8, 0.1, 4)
-	lootZone.Position = lootPos
-	lootZone.Anchored = true
-	lootZone.Transparency = 1
-	lootZone.CanCollide = false
-	lootZone.Parent = workspace
-	createLabel(lootZone, "Loot (Press E)", Color3.new(0, 1, 1))
+	-- 5. Loot & Craft Zone (Near)
+	local lootPos = origin + (spawnCFrame.LookVector * -5)
+	DropService.SpawnDrop(lootPos + (spawnCFrame.RightVector * -3), "Wood", 10)
+	DropService.SpawnDrop(lootPos + (spawnCFrame.RightVector * 3), "Stone", 10)
 	
 	-- Craft Bench
 	local bench = Instance.new("Part")
 	bench.Name = "CraftBench"
-	bench.Size = Vector3.new(4, 2, 2)
-	bench.Position = lootPos + Vector3.new(0, 1, 5)
+	bench.Size = Vector3.new(6, 3, 3)
+	bench.Position = lootPos + (spawnCFrame.LookVector * -5)
 	bench.Anchored = true
-	bench.Color = Color3.fromRGB(139, 69, 19)
+	bench.Color = Color3.fromRGB(120, 80, 50)
 	bench.Parent = workspace
 	bench:SetAttribute("InteractType", "CraftBench")
 	CollectionService:AddTag(bench, "Interactable")
-	createLabel(bench, "Craft Bench (Press E)", Color3.new(1, 1, 1))
+	createLabel(bench, "🔨 Crafting Bench", Color3.new(1, 1, 1))
 
-	print("[Playground] Setup Complete!")
+	print("[Playground] Setup Complete in front of player!")
 end
 
 Players.PlayerAdded:Connect(function(player)

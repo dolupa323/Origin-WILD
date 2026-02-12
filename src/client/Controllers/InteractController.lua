@@ -17,6 +17,10 @@ local INTERACT_KEY = Enum.KeyCode.E
 local COOLDOWN = 0.25
 local nextRequest = 0
 
+local function newRid()
+	return tostring(math.random(10000, 99999)) .. "-" .. tostring(os.clock())
+end
+
 function InteractController:Init()
 	UserInputService.InputBegan:Connect(function(input, gpe)
 		if gpe then return end
@@ -33,6 +37,7 @@ function InteractController:Init()
 			-- Send Request
 			print("[InteractClient] request E key")
 			Net.Fire(Contracts.Remotes.Request, {
+				rid = newRid(),
 				-- We send aim direction, server does raycast from character origin
 				data = {
 					aim = {

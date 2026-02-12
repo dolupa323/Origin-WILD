@@ -18,66 +18,11 @@ Net.On("Combat_Result", function(payload)
 	end
 end)
 
-task.delay(4, function()
-	print("--- [TEST] Combat_AttackRequest ---")
+	-- Test code removed
 
-	local char = player.Character or player.CharacterAdded:Wait()
-	local hrp = char:WaitForChild("HumanoidRootPart")
 
-	local dummy = workspace:WaitForChild("TestDummy")
-	local targetPos = dummy:WaitForChild("HumanoidRootPart").Position
+-- Phase 1-2 & 1-3 Tests removed
 
-	local dir = (targetPos - hrp.Position).Unit
-
-	Net.Fire("Combat_AttackRequest", {
-		rid = rid(),
-		t = os.clock(),
-		data = {
-			kind = "Melee",
-			aim = { dir = dir },
-		}
-	})
-
-	-- 연타 -> cooldown 확인
-	for _=1,6 do
-		task.wait(0.1)
-		Net.Fire("Combat_AttackRequest", {
-			rid = rid(),
-			t = os.clock(),
-			data = { kind="Melee", aim={ dir=Vector3.new(0,0,-1) } }
-		})
-	end
-end)
-
--- === Phase1-2 Crafting Test (토글) ===
-task.spawn(function()
-	local folder = script.Parent
-	local m = folder:FindFirstChild("crafting_test")
-		or folder:FindFirstChild("crafting_test.client")
-		or folder:FindFirstChild("crafting_test.client.lua")
-
-	if m and m:IsA("ModuleScript") then
-		local ok, err = pcall(require, m)
-		if not ok then
-			warn("[client_init] crafting_test require error:", err)
-		end
-	end
-end)
-
--- === Phase1-3 Equip Test (토글) ===
-task.spawn(function()
-	local folder = script.Parent
-	local m = folder:FindFirstChild("equip_test")
-		or folder:FindFirstChild("equip_test.client")
-		or folder:FindFirstChild("equip_test.client.lua")
-
-	if m and m:IsA("ModuleScript") then
-		local ok, err = pcall(require, m)
-		if not ok then
-			warn("[client_init] equip_test require error:", err)
-		end
-	end
-end)
 -- === Phase1-4 Hotbar/Use Controllers ===
 task.spawn(function()
 	-- UI First

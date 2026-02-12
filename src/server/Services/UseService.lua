@@ -81,6 +81,12 @@ function UseService.UseRequest(player, aim)
 end
 
 function UseService:Init()
+	-- Register Remotes
+	Net.Register({
+		Contracts.Remotes.Request,
+		Contracts.Remotes.Ack
+	})
+	
 	Net.On(Contracts.Remotes.Request, function(player, payload)
 		local aim = payload.aim
 		local ok, code, data = UseService.UseRequest(player, aim)
