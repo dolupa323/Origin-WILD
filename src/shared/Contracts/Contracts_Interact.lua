@@ -1,16 +1,25 @@
-local C = {}
+-- Contracts_Interact.lua
+-- Phase 1-5-0
+-- Defines constants and remotes logic for Interaction system (Pickup, Open, etc)
 
-C.Error = {
+local Contracts_Interact = {}
+
+-- 1. Error Codes
+Contracts_Interact.ErrorCodes = {
 	OK = "OK",
-	VALIDATION_FAILED = "VALIDATION_FAILED",
-	OUT_OF_RANGE = "OUT_OF_RANGE",
-	COOLDOWN = "COOLDOWN",
 	NOT_FOUND = "NOT_FOUND",
-	DENIED = "DENIED",
+	TOO_FAR = "TOO_FAR",
+	INVENTORY_FULL = "INVENTORY_FULL",
 	INTERNAL_ERROR = "INTERNAL_ERROR",
 }
 
--- 서버가 인정하는 상호작용 대상 태그(Phase0 고정)
-C.InteractableTag = "Interactable"
+-- 2. Remote Definitions
+Contracts_Interact.Remotes = {
+	Request = "Interact_Request", -- Client -> Server: { targetId (instance or guid) }
+	Ack = "Interact_Ack",         -- Server -> Client: { ok, code, action, ... }
+}
 
-return C
+-- 3. Constants
+Contracts_Interact.InteractableTag = "Interactable"
+
+return Contracts_Interact

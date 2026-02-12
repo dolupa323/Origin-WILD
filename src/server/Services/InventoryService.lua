@@ -140,20 +140,21 @@ function InventoryService.DebugTest(player)
   InventoryService.AddItem(player, "Pickaxe", 1)
 	InventoryService.AddItem(player, "Wood", 150)
 	InventoryService.AddItem(player, "Stone", 50)
-  local inv = getInv(player)
-  print("[InventoryService] slots_len =", #inv, "slots_type =", typeof(inv))
+  local slots = getInv(player)
+  print("[InventoryService] slots_len =", #slots, "slots_type =", typeof(slots))
 
 	local inv = getInv(player)
 
-print("[InventoryService] dump first 30 slots")
-for i = 1, 30 do
-	local s = inv[i]
-	if s then
-		print(("slot[%d] = %s x%d"):format(i, s.ItemId, s.Qty))
-	else
-		print(("slot[%d] = <empty>"):format(i))
-	end
-end
+	-- print("[InventoryService] dump first 30 slots")
+	-- for i = 1, 30 do
+	-- 	local item = slots[i]
+	-- 	if item then
+	-- 		print(("  slot[%d] = %s x%d"):format(i, item.ItemId, item.Qty))
+	-- 	else
+	-- 		print(("  slot[%d] = <empty>"):format(i))
+	-- 	end
+	-- end
+	print(("[InventoryService] loaded slots_len=%d"):format(#slots))
 
 end
 
@@ -165,5 +166,24 @@ Players.PlayerAdded:Connect(function(player)
 	task.wait(1)
 	InventoryService.DebugTest(player)
 end)
+
+-------------------------------------------------
+-- Accessors (Phase 1-4-0)
+-------------------------------------------------
+
+function InventoryService.GetSlot(player, slotIndex)
+	local inv = getInv(player)
+	if not inv then return nil end
+	local s = inv[slotIndex]
+	if not s then return nil end
+	
+	-- Return clean copy or direct ref? 
+	-- For read-only purpose, return simplified structure
+	return {
+		ItemId = s.ItemId,
+		Qty = s.Qty,
+		Meta = s.Meta
+	}
+end
 
 return InventoryService

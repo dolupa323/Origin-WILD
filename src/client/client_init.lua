@@ -78,5 +78,28 @@ task.spawn(function()
 		end
 	end
 end)
+-- === Phase1-4 Hotbar/Use Controllers ===
+task.spawn(function()
+	-- UI First
+	local HotbarUI = require(script.Parent.UI.HotbarUI)
+	if HotbarUI.Init then
+		HotbarUI:Init()
+	end
+
+	local HotbarController = require(script.Parent.Controllers.HotbarController)
+	if HotbarController.Init then
+		HotbarController:Init()
+	end
+	
+	local UseController = require(script.Parent.Controllers.UseController)
+	if UseController.Init then
+		UseController:Init()
+	end
+	
+	local InteractController = require(script.Parent.Controllers.InteractController)
+	if InteractController.Init then
+		InteractController:Init()
+	end
+end)
 
 return true

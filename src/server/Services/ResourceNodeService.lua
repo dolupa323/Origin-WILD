@@ -82,6 +82,8 @@ function ResourceNodeService.SpawnResourceNode(position: Vector3, nodeType: stri
 	part:SetAttribute("MaxHP", hp)
 	part:SetAttribute("ItemId", itemId)
 	part:SetAttribute("Qty", qty)
+	-- Palworld-like: Node type for tool checking
+	part:SetAttribute("NodeType", nodeType) -- "Tree", "Stone"
 
 	-- Register as entity
 	EntityService.CreateEntity(nodeModel, {
@@ -112,7 +114,7 @@ function ResourceNodeService.SpawnResourceNode(position: Vector3, nodeType: stri
 	return nodeModel
 end
 
-function ResourceNodeService.TryHarvest(player: Player, nodeModel: Model): (boolean, string?)
+function ResourceNodeService.TryHarvest(player: Player, nodeModel: Model, toolData: table?): (boolean, string?)
 	if not nodeModel or not nodeModel.Parent then
 		return false, "MISSING"
 	end
@@ -136,12 +138,31 @@ function ResourceNodeService.TryHarvest(player: Player, nodeModel: Model): (bool
 		return false, "DEPLETED"
 	end
 
-	-- Apply damage (10 per harvest)
-	local dmg = 10
-	local newHp = math.max(0, hp - dmg)
+	local nodeType = part:GetAttribute("NodeType") -- "Tree", "Stone"
+
+	-- Calculate Damage based on Tool Logic
+	local baseDmg = 1
+	local toolType = toolData and toolData.ToolType or "None"
+	local toolPower = toolData and toolData.Power or 5
+
+	-- Effectiveness Multiplier
+	local multiplier = 0.2 -- Default weak (20%)
+
+	if nodeType == "Tree" then
+		if toolType == "Axe" then multiplier = 1.0 end
+	elseif nodeType == "Stone" then
+		if toolType == "Pickaxe" then multiplier = 1.0 end
+	end
+
+	local finalDmg = math.floor(toolPower * multiplier)
+	if finalDmg < 1 then finalDmg = 1 end
+
+	local newHp = math.max(0, hp - finalDmg)
 	part:SetAttribute("HP", newHp)
 
-	print(("[ResourceNode] hit %s hp %d->%d"):format(part.Name, hp, newHp))
+	print(("[ResourceNode] %s used %s(pow=%d) on %s -> dmg %d (eff: %.1f)"):format(
+		player.Name, toolType, toolPower, part.Name, finalDmg, multiplier
+	))
 
 	-- Check if depleted
 	if newHp <= 0 then

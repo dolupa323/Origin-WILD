@@ -191,7 +191,42 @@ function EquipService:_handleUse(player, payload)
 	return ack(rid, true, Contracts.Error.OK, nil, outData)
 end
 
+-- Phase 1-4-2: Expose DispatchUse for UseService
+function EquipService.DispatchUse(itemId, ctx)
+	local mod = EquipRegistry:Get(itemId)
+	if not mod or not mod.OnUse then
+		return false, "NO_HANDLER_OR_MODULE"
+	end
+	
+	-- Pass cooldown check here if needed, or rely on UseService's check?
+	-- UseService does Global Cooldown (0.2s). Item might have its own cooldown.
+	-- Let's doing item cooldown check here.
+	local player = ctx.player
+	local cd = tonumber(mod.Cooldown) or 0
+	-- Note: EquipService uses "Use:EquipSlot:ItemId" for key.
+	-- Hotbar usage doesn't have "EquipSlot". Key convention: "Hotbar:ItemId"?
+	-- Or just "Use:ItemId"?
+	-- Let's use "Use:Item:ItemId" for now.
+	local cdKey = "Use:Item:"..tostring(itemId)
+	
+	if not passCooldown(player.UserId, cdKey, cd) then
+		return false, "COOLDOWN"
+	end
+
+	local ok, code, data = mod.OnUse(ctx)
+	if not ok then
+		return false, code or "HANDLER_FAIL", data
+	end
+	
+	return true, "OK", { handler = itemId, data = data }
+end
+
 function EquipService:Init()
+	-- Phase 0: Register "Equip_*" net messages
+	-- (Previously defined, keeping them for backward compat if any test uses them)
+	-- But Phase 1-4-2 UseService handles "Use_Request".
+	-- We just keep existing inits.
+	
 	Net.Register({ "Equip_Request", "Equip_Use", "Equip_Ack" })
 
 	Net.On("Equip_Request", function(player, payload)
@@ -201,6 +236,8 @@ function EquipService:Init()
 	Net.On("Equip_Use", function(player, payload)
 		Net.Fire("Equip_Ack", player, self:_handleUse(player, payload))
 	end)
+	
+	print("[EquipService] ready")
 end
 
 Players.PlayerRemoving:Connect(function(p)

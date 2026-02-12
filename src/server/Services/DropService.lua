@@ -129,8 +129,10 @@ function DropService.SpawnDrop(position: Vector3, itemId: string, qty: number, o
 	p:SetAttribute("Qty", qty)
 	p:SetAttribute("OwnerUserId", ownerUserId or 0)
 	p:SetAttribute("SpawnTime", now())
+	p:SetAttribute("InteractType", "WorldDrop") -- For InteractService dispatch
 
 	CollectionService:AddTag(p, DROP_TAG)
+	CollectionService:AddTag(p, "Interactable") -- For Interact Check
 
 	print(("[Drop] spawned %s x%d id=%s owner=%d"):format(itemId, qty, dropId, ownerUserId or 0))
 

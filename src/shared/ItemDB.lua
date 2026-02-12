@@ -23,6 +23,9 @@ return {
 		EquipType = "Tool",
 		Use = "Harvest",
 		NodeTags = {"ResourceNode"},
+		-- Validation specs
+		ToolType = "Axe",
+		Power = 20,
 	},
 
 	StonePickaxe = {
@@ -31,6 +34,9 @@ return {
 		EquipType = "Tool",
 		Use = "Harvest",
 		NodeTags = {"ResourceNode"},
+		-- Validation specs
+		ToolType = "Pickaxe",
+		Power = 20,
 	},
 
 	StoneSword = {

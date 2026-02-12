@@ -59,7 +59,9 @@ function StoneAxe.OnUse(ctx)
 	end
 
 	-- Call TryHarvest
-	local ok, code = ResourceNodeService.TryHarvest(player, target)
+	-- Phase1-3-1: Pass tool data
+	local toolData = { ToolType="Axe", Power=20 }
+	local ok, code = ResourceNodeService.TryHarvest(player, target, toolData)
 	if not ok then
 		return false, code or "HARVEST_FAIL"
 	end
