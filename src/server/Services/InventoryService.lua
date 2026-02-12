@@ -42,6 +42,11 @@ function InventoryService.AddItem(player, itemId, qty)
 	local def = ItemDB[itemId]
 	if not def then return false end
 
+	-- Handle negative qty (removal)
+	if qty < 0 then
+		return InventoryService.RemoveItem(player, itemId, -qty)
+	end
+
 	-- stack first
 	for i=1,30 do
 		local s = inv[i]
@@ -60,6 +65,29 @@ function InventoryService.AddItem(player, itemId, qty)
 			inv[i] = { ItemId=itemId, Qty=put }
 			qty -= put
 			if qty <= 0 then return true end
+		end
+	end
+
+	return false
+end
+
+function InventoryService.RemoveItem(player, itemId, qty)
+	local inv = getInv(player)
+	local def = ItemDB[itemId]
+	if not def then return false end
+
+	-- Try to remove qty from existing stacks
+	local remaining = qty
+	for i=1,30 do
+		local s = inv[i]
+		if s and s.ItemId == itemId then
+			local remove = math.min(remaining, s.Qty)
+			s.Qty -= remove
+			remaining -= remove
+			if s.Qty <= 0 then
+				inv[i] = nil
+			end
+			if remaining <= 0 then return true end
 		end
 	end
 
