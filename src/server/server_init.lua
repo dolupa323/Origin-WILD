@@ -72,6 +72,15 @@ else
 end
 print("[ResourceNodeService] ready")
 
+-- 9. CraftingService (Phase 1-2)
+local CraftingService = require(script.Parent.Services.CraftingService)
+if CraftingService.Init then
+	CraftingService:Init()
+else
+	warn("[CraftingService] missing Init()")
+end
+print("[CraftingService] ready")
+
 -- === Phase0-7 TEST HARNESS (임시: 테스트 후 삭제 예정) ===
 -- 목적: Terrain/지형이 레이를 먼저 맞는 문제를 제거하기 위해,
 --       TestInteract를 "플레이어 HRP 기준"으로 근처에 스폰한다.
@@ -255,6 +264,50 @@ task.delay(6, function()
 		print("  [ResourceNode] depleted Tree")
 		print("  [Drop] spawned Wood ...")
 	end
+end)
+
+-- === Phase1-2 TEST HARNESS (Crafting test) ===
+task.delay(7, function()
+	if workspace:FindFirstChild("TestCraftBench") then return end
+
+	local player = Players:GetPlayers()[1]
+	if not player then
+		warn("[CraftBenchTest] no players yet")
+		return
+	end
+
+	local char = player.Character or player.CharacterAdded:Wait()
+	local phrp = char:WaitForChild("HumanoidRootPart")
+
+	-- 1. Add minimal initial inventory items for testing (with empty slot for output)
+	local InventoryService = require(script.Parent.Services.InventoryService)
+	-- Only add what's needed for crafting, leave slots empty for output
+	local SaveService = require(script.Parent.Services.SaveService)
+	local inv = SaveService.Get(player).Inventory.Slots
+	
+	-- Clear any existing items
+	for i=1,30 do inv[i] = nil end
+	
+	-- Add exact amounts needed for test
+	InventoryService.AddItem(player, "Wood", 3)
+	InventoryService.AddItem(player, "Stone", 2)
+	print("[CraftBenchTest] cleared inventory and added Wood x3, Stone x2 (empty slots available)")
+
+	-- 2. Create TestCraftBench part
+	local bench = Instance.new("Part")
+	bench.Name = "TestCraftBench"
+	bench.Size = Vector3.new(4, 1, 4)
+	bench.Anchored = true
+	bench.CanCollide = false
+	bench.BrickColor = BrickColor.new("Dark stone grey")
+	bench.Position = phrp.Position + Vector3.new(0, 0, 8)
+	bench:SetAttribute("InteractType", "CraftBench")
+	CollectionService:AddTag(bench, "Interactable")
+	bench.Parent = workspace
+
+	print("[CraftBenchTest] spawned bench near player at", bench.Position)
+	print("[CraftBenchTest] interact with E key to open bench")
+	print("[CraftBenchTest] then client sends Craft_Request")
 end)
 
 return true

@@ -95,6 +95,13 @@ handlers.ResourceNode = function(player, target, hit, distance)
 	return ok, code or Contracts.Error.OK, nil, { resourceNode = target:GetFullName() }
 end
 
+-- Phase1-2 공작대 핸들러 (E키 오픈)
+handlers.CraftBench = function(player, target, hit, distance)
+	local CraftingService = require(script.Parent.CraftingService)
+	local ok, code = CraftingService.OpenBench(player, target)
+	return ok, code or Contracts.Error.OK, nil, { bench = target:GetFullName() }
+end
+
 local function dispatch(player, target, hit, distance)
 	local t = target:GetAttribute("InteractType")
 	if type(t) == "string" and handlers[t] then

@@ -49,4 +49,16 @@ task.delay(4, function()
 	end
 end)
 
+-- === Phase1-2 Crafting Test (토글) ===
+local folder = script.Parent
+local m = folder:FindFirstChild("crafting_test")
+	or folder:FindFirstChild("crafting_test.client")
+	or folder:FindFirstChild("crafting_test.client.lua")
+
+if m then
+	require(m)
+else
+	warn("[client_init] crafting_test module not found")
+end
+
 return true

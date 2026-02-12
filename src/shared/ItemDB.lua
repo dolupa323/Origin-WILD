@@ -16,4 +16,14 @@ return {
 		MaxStack = 1,
 		Type = "Equipment",
 	},
+
+	StoneAxe = {
+		MaxStack = 1,
+		Type = "Equipment",
+	},
+
+	StonePickaxe = {
+		MaxStack = 1,
+		Type = "Equipment",
+	},
 }
