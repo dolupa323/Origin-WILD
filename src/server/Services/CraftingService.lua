@@ -34,7 +34,15 @@ local function canFitOutputs(player, recipe)
 		return false
 	end
 
-	-- Simulate each output: can it fit?
+	-- Deep copy slots to simulate placement without mutating real inventory
+	local simSlots = {}
+	for i = 1, 30 do
+		if slots[i] then
+			simSlots[i] = { ItemId = slots[i].ItemId, Qty = slots[i].Qty }
+		end
+	end
+
+	-- Simulate each output placement sequentially
 	for _, output in ipairs(recipe.outputs) do
 		local itemId = output.id
 		local qty = output.qty
@@ -47,33 +55,29 @@ local function canFitOutputs(player, recipe)
 		local remaining = qty
 		local maxStack = def.MaxStack
 
-		-- 1. Try to fit in existing stacks
-		for i=1,30 do
-			local s = slots[i]
-			if s and s.ItemId == itemId then
-				local canAdd = maxStack - s.Qty
-				if canAdd > 0 then
-					remaining -= math.min(remaining, canAdd)
+		-- 1. Try to fit in existing stacks (simulated)
+		for i = 1, 30 do
+			local s = simSlots[i]
+			if s and s.ItemId == itemId and s.Qty < maxStack then
+				local canAdd = math.min(remaining, maxStack - s.Qty)
+				s.Qty += canAdd
+				remaining -= canAdd
+				if remaining <= 0 then break end
+			end
+		end
+
+		-- 2. Try to fill empty slots (simulated, properly decremented)
+		if remaining > 0 then
+			for i = 1, 30 do
+				if not simSlots[i] then
+					local put = math.min(remaining, maxStack)
+					simSlots[i] = { ItemId = itemId, Qty = put }
+					remaining -= put
 					if remaining <= 0 then break end
 				end
 			end
 		end
 
-		-- 2. Try to fit in empty slots
-		if remaining > 0 then
-			local emptyCount = 0
-			for i=1,30 do
-				if not slots[i] then
-					emptyCount += 1
-				end
-			end
-			
-			-- Each empty slot can hold maxStack items
-			local canFit = emptyCount * maxStack
-			remaining -= math.min(remaining, canFit)
-		end
-
-		-- If anything left, cannot fit
 		if remaining > 0 then
 			return false
 		end
@@ -135,7 +139,8 @@ function CraftingService.HandleCraftRequest(player: Player, payload: table): tab
 		if char then
 			local hrp = char:FindFirstChild("HumanoidRootPart")
 			if hrp then
-				local dist = (benchPart.Position - hrp.Position).Magnitude
+				local benchPos = benchPart:IsA("Model") and benchPart:GetPivot().Position or benchPart.Position
+				local dist = (benchPos - hrp.Position).Magnitude
 				if dist > 12 then
 					return ack(rid, false, Contracts.Error.OUT_OF_RANGE, "too far from bench")
 				end
@@ -146,12 +151,12 @@ function CraftingService.HandleCraftRequest(player: Player, payload: table): tab
 	----- ===== ATOMIC: Validate ALL before consuming =====
 
 	-- 1. Check if player has all required inputs
-	for _, input in ipairs(recipe.inputs) do
-		local slots = InventoryService.GetSlots(player)
-		if not slots then
-			return ack(rid, false, Contracts.Error.INTERNAL_ERROR, "no inventory")
-		end
+	local slots = InventoryService.GetSlots(player)
+	if not slots then
+		return ack(rid, false, Contracts.Error.INTERNAL_ERROR, "no inventory")
+	end
 
+	for _, input in ipairs(recipe.inputs) do
 		local have = 0
 		for i=1,30 do
 			local s = slots[i]

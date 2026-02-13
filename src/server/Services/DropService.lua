@@ -102,20 +102,31 @@ end
 -- ===== Core API =====
 
 function DropService.PickupValues(player, dropPart)
-	if not dropPart or not dropPart.Parent then return end
+	if not dropPart or not dropPart.Parent then return false end
 	
 	local itemId = dropPart:GetAttribute("ItemId")
 	local qty = dropPart:GetAttribute("Qty")
 	
-	if not itemId or not qty then return end
+	if not itemId or not qty then return false end
+
+	-- ownership protect window
+	local ownerUserId = dropPart:GetAttribute("OwnerUserId") or 0
+	local spawnTime = dropPart:GetAttribute("SpawnTime") or 0
+	if ownerUserId ~= 0 and ownerUserId ~= player.UserId then
+		if now() - spawnTime < OWNER_PROTECT_SECONDS then
+			return false
+		end
+	end
 	
 	-- Add to inventory
 	local ok = InventoryService.AddItem(player, itemId, qty)
 	if ok then
 		dropPart:Destroy()
 		Net.Fire("Loot_Ack", player, { ok = true, msg = "picked up", data = { itemId = itemId, qty = qty } })
+		return true
 	else
 		Net.Fire("Loot_Ack", player, { ok = false, msg = "full" })
+		return false
 	end
 end
 
@@ -133,14 +144,37 @@ function DropService.SpawnDrop(position: Vector3, itemId: string, qty: number, o
 	dropSeq += 1
 	local dropId = "D" .. tostring(dropSeq) .. "-" .. tostring(math.floor(now() * 1000))
 
-	-- Create a simple part for Phase0 (visual later)
+	-- Create hitbox part (larger for easy clicking) with visual child
 	local p = Instance.new("Part")
 	p.Name = "WorldDrop_" .. itemId
-	p.Size = Vector3.new(1, 1, 1)
-	p.Anchored = true
-	p.CanCollide = false
-	p.Position = position + Vector3.new(0, 1.5, 0)
+	p.Size = Vector3.new(2.5, 2.5, 2.5) -- 히트박스 확대 (클릭 용이)
+	p.Transparency = 1 -- 히트박스 자체는 투명
+	p.Anchored = false
+	p.CanCollide = true
+	p.Position = position + Vector3.new(0, 3, 0)
 	p.Parent = workspace
+
+	-- 시각적 표시 (작은 파트)
+	local visual = Instance.new("Part")
+	visual.Name = "Visual"
+	visual.Size = Vector3.new(1, 1, 1)
+	visual.BrickColor = BrickColor.new("Gold")
+	visual.Anchored = false
+	visual.CanCollide = false
+	visual.Parent = p
+
+	local weld = Instance.new("WeldConstraint")
+	weld.Part0 = p
+	weld.Part1 = visual
+	weld.Parent = p
+
+	-- 강조 효과
+	local sb = Instance.new("SelectionBox")
+	sb.Adornee = visual
+	sb.Color3 = Color3.fromRGB(255, 255, 0)
+	sb.LineThickness = 0.05
+	sb.Transparency = 0.5
+	sb.Parent = p
 
 	p:SetAttribute("DropId", dropId)
 	p:SetAttribute("ItemId", itemId)

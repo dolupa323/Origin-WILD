@@ -12,6 +12,9 @@ local Players = game:GetService("Players")
 
 local HotbarController = {}
 
+-- Pre-cache UI module (avoid repeated require in event handlers)
+local HotbarUI = require(script.Parent.Parent.UI.HotbarUI)
+
 -- Key mapping
 local KeyMap = {
 	[Enum.KeyCode.One] = 1,
@@ -44,8 +47,7 @@ function HotbarController:Init()
 			currentSlot = payload.activeSlot -- Sync with server ack
 			
 			-- Update UI
-			local HotbarUI = require(script.Parent.Parent.UI.HotbarUI) -- Lazy require or move up
-			if HotbarUI.OnSelect then
+			if HotbarUI and HotbarUI.OnSelect then
 				HotbarUI.OnSelect(payload.activeSlot, payload.itemId, payload.qty)
 			end
 		else

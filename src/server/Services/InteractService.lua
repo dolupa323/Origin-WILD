@@ -1,3 +1,8 @@
+-- InteractService.lua
+-- Phase 1-5-0
+-- Server authoritative interaction dispatcher (Validate Target instead of blind raycast)
+-- Client sends mouse.Target, server validates distance/tag/obstruction
+
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollectionService = game:GetService("CollectionService")
@@ -8,11 +13,8 @@ local Contracts = require(Shared:WaitForChild("Contracts"):WaitForChild("Contrac
 
 local InteractService = {}
 
--- ===== Tunables (Phase0) =====
-local MAX_DIST = 12
+local MAX_DIST = 15 -- generous distance (3인칭 시점 보정)
 local COOLDOWN = 0.25
-
--- cooldowns[userId] = nextAllowedTime
 local cooldowns = {}
 
 local function now()
@@ -35,31 +37,15 @@ local function passCooldown(userId)
 	return true
 end
 
-local function getOrigin(player: Player): Vector3?
+local function getOrigin(player: Player)
 	local char = player.Character
 	if not char then return nil end
-
 	local hrp = char:FindFirstChild("HumanoidRootPart")
-	if hrp and hrp:IsA("BasePart") then
-		return hrp.Position
-	end
-
-	local head = char:FindFirstChild("Head")
-	if head and head:IsA("BasePart") then
-		return head.Position
-	end
-
+	if hrp then return hrp.Position end
 	return nil
 end
 
-local function sanitizeDir(v)
-	if typeof(v) ~= "Vector3" then return nil end
-	local m = v.Magnitude
-	if m < 0.1 then return nil end
-	return v / m
-end
-
-local function findInteractableAncestor(inst: Instance): Instance?
+local function findInteractableAncestor(inst)
 	local cur = inst
 	while cur and cur ~= workspace do
 		if CollectionService:HasTag(cur, Contracts.InteractableTag) then
@@ -70,51 +56,35 @@ local function findInteractableAncestor(inst: Instance): Instance?
 	return nil
 end
 
--- handlers[InteractType] = function(player, target, hit, distance) -> (ok, code, msg, data)
+-- Handlers
 local handlers = {}
 
--- Phase0 기본 핸들러 (콘텐츠 없음 -> 로그로만 검증)
 handlers.Default = function(player, target, hit, distance)
-	-- ...existing code...
 	return true, Contracts.ErrorCodes.OK, nil, {
 		target = target:GetFullName(),
-		hit = hit:GetFullName(),
-		distance = distance,
-		interactType = target:GetAttribute("InteractType") or target.Name,
+		interactType = target:GetAttribute("InteractType"),
 	}
 end
 
--- Phase1-1 자원 노드 핸들러 (E키 수확)
 handlers.ResourceNode = function(player, target, hit, distance)
-	local ResourceNodeService = require(script.Parent.ResourceNodeService)
-	local nodeModel = target:IsA("Model") and target or target:FindFirstAncestorOfClass("Model")
-	if not nodeModel then
-		return false, Contracts.ErrorCodes.INTERNAL_ERROR, "no model"
-	end
-	local ok, code = ResourceNodeService.TryHarvest(player, nodeModel)
-	return ok, code or Contracts.ErrorCodes.OK, nil, { resourceNode = target:GetFullName() }
+	-- E키 상호작용은 맨손 채집 불가 → 도구 사용 안내
+	return false, Contracts.ErrorCodes.DENIED, "Use tool to harvest"
 end
 
--- Phase1-2 공작대 핸들러 (E키 오픈)
 handlers.CraftBench = function(player, target, hit, distance)
 	local CraftingService = require(script.Parent.CraftingService)
 	local ok, code = CraftingService.OpenBench(player, target)
 	return ok, code or Contracts.ErrorCodes.OK, nil, { bench = target:GetFullName() }
 end
 
--- Phase1-5 Drop Pickup Handler (E키 줍기)
 handlers.WorldDrop = function(player, target, hit, distance)
 	local DropService = require(script.Parent.DropService)
-	-- DropService.TryPickup currently uses "nearest drop" logic or "rid"
-	-- But InteractService passes a specific target.
-	-- We should check if DropService has a way to pick up *specific* drop or we modify DropService.
-	-- DropService.TryPickup(player, rid) searches for nearest drop.
-	-- Let's call TryPickup with a dummy RID, but ideally we should pass target.
-	-- Since DropService.TryPickup searches nearest, consistent with "E" key interaction near item.
-	-- Let's just forward to TryPickup.
-	
-	local ack = DropService.TryPickup(player, "InteractDispatch")
-	return ack.ok, ack.code or "FAIL", nil, ack.data
+	local result = DropService.PickupValues(player, target)
+	if result then
+		return true, "OK", nil, { itemId = "picked" }
+	else
+		return false, "FULL", "Inventory Full"
+	end
 end
 
 local function dispatch(player, target, hit, distance)
@@ -132,61 +102,68 @@ function InteractService:_handleRequest(player, payload)
 
 	local rid = payload.rid
 	local data = payload.data
+	local clientTarget = data.target -- 클라가 보낸 마우스 타겟
 
 	if not passCooldown(player.UserId) then
 		return ack(rid, false, Contracts.ErrorCodes.COOLDOWN, "cooldown")
 	end
 
-	-- 클라 origin은 신뢰하지 않음. 서버 origin 사용.
 	local origin = getOrigin(player)
 	if not origin then
 		return ack(rid, false, Contracts.ErrorCodes.INTERNAL_ERROR, "no character origin")
 	end
 
-	local aim = data.aim
-	if type(aim) ~= "table" then
-		return ack(rid, false, Contracts.ErrorCodes.VALIDATION_FAILED, "missing aim")
+	-- 1. 타겟 유효성 검증 (클라가 보낸 타겟이 실제로 존재하는가)
+	if not clientTarget or not clientTarget.Parent then
+		return ack(rid, false, Contracts.ErrorCodes.NOT_FOUND, "no target locked")
 	end
 
-	local dir = sanitizeDir(aim.dir)
-	if not dir then
-		return ack(rid, false, Contracts.ErrorCodes.VALIDATION_FAILED, "bad aim.dir")
-	end
-
-	-- Spherecast for generous hitbox
-	local params = RaycastParams.new()
-	params.FilterType = Enum.RaycastFilterType.Exclude
-	params.IgnoreWater = true
-	-- 자기 캐릭터는 제외
-	if player.Character then
-		params.FilterDescendantsInstances = { player.Character }
+	-- 2. 거리 검증 (Server Authoritative Check)
+	local targetPos
+	if clientTarget:IsA("Model") then
+		targetPos = clientTarget:GetPivot().Position
 	else
-		params.FilterDescendantsInstances = {}
+		targetPos = clientTarget.Position
 	end
-
-	local rayDist = MAX_DIST
-	local sphereRadius = 1.0 -- Interact radius
-	local result = workspace:Spherecast(origin, sphereRadius, dir * rayDist, params)
-	
-	if not result or not result.Instance then
-		return ack(rid, false, Contracts.ErrorCodes.NOT_FOUND, "no hit")
-	end
-
-	local hit = result.Instance
-	local target = findInteractableAncestor(hit)
-	if not target then
-	return ack(rid, false, Contracts.ErrorCodes.DENIED, "hit not interactable", {
-		hit = hit:GetFullName(),
-	})
-end
-
-
-	local distance = (result.Position - origin).Magnitude
-	if distance > MAX_DIST + 0.01 then
+	local dist = (targetPos - origin).Magnitude
+	if dist > MAX_DIST then
 		return ack(rid, false, Contracts.ErrorCodes.OUT_OF_RANGE, "too far")
 	end
 
-	local ok, code, msg, outData = dispatch(player, target, hit, distance)
+	-- 3. Interactable 태그 검증
+	local interactable = findInteractableAncestor(clientTarget)
+	if not interactable then
+		return ack(rid, false, Contracts.ErrorCodes.DENIED, "not interactable")
+	end
+
+	-- 4. 시야 검증 (벽 뚫기 방지)
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Include
+	-- 클라 타겟, 플레이어 캐릭터 모두 제외 → 그 사이에 가리는 물체가 있는지만 체크
+	local excludeList = { player.Character }
+	-- interactable이 Model이면 모든 자식 제외
+	if interactable:IsA("Model") then
+		table.insert(excludeList, interactable)
+	else
+		table.insert(excludeList, clientTarget)
+	end
+	local losParams = RaycastParams.new()
+	losParams.FilterType = Enum.RaycastFilterType.Exclude
+	losParams.FilterDescendantsInstances = excludeList
+	losParams.IgnoreWater = true
+
+	local rayDir = (targetPos - origin)
+	local rayResult = workspace:Raycast(origin, rayDir, losParams)
+	if rayResult then
+		-- 가리는 물체가 있으나, 그 거리가 타겟까지의 거리보다 짧으면 가림
+		local blockDist = (rayResult.Position - origin).Magnitude
+		local targetDist = rayDir.Magnitude
+		if blockDist < targetDist - 1 then
+			return ack(rid, false, Contracts.ErrorCodes.DENIED, "obstructed")
+		end
+	end
+
+	local ok, code, msg, outData = dispatch(player, interactable, clientTarget, dist)
 	if ok == false then
 		return ack(rid, false, code or Contracts.ErrorCodes.DENIED, msg or "handler denied", outData)
 	end
@@ -195,10 +172,10 @@ end
 end
 
 function InteractService:Init()
-	Net.Register({ "Interact_Request", "Interact_Ack" })
+	Net.Register({ Contracts.Remotes.Request, Contracts.Remotes.Ack })
 
-	Net.On("Interact_Request", function(player, payload)
-		Net.Fire("Interact_Ack", player, self:_handleRequest(player, payload))
+	Net.On(Contracts.Remotes.Request, function(player, payload)
+		Net.Fire(Contracts.Remotes.Ack, player, self:_handleRequest(player, payload))
 	end)
 
 	print("[InteractService] ready")

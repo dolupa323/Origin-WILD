@@ -25,7 +25,7 @@ local C = {
 	Text     = Color3.fromRGB(230, 230, 240),
 	TextDim  = Color3.fromRGB(150, 150, 165),
 	Green    = Color3.fromRGB(80, 200, 80),
-	Red      = Color3.fromRGB(200, 80, 80),
+	Red      = Color3.fromRGB(220, 60, 60),
 	Border   = Color3.fromRGB(60, 60, 70),
 }
 
@@ -120,10 +120,10 @@ function CraftingUI:Init()
 	closeBtn.Text = "✕"
 	closeBtn.Size = UDim2.new(0, 32, 0, 32)
 	closeBtn.Position = UDim2.new(1, -48, 0, 8)
-	closeBtn.BackgroundColor3 = C.SlotBg
-	closeBtn.TextColor3 = C.TextDim
+	closeBtn.BackgroundColor3 = C.Red
+	closeBtn.TextColor3 = Color3.new(1, 1, 1)
 	closeBtn.Font = Enum.Font.GothamBold
-	closeBtn.TextSize = 16
+	closeBtn.TextSize = 18
 	closeBtn.BorderSizePixel = 0
 	closeBtn.Parent = panel
 	Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 6)

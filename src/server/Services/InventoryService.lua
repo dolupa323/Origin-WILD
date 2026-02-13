@@ -19,7 +19,16 @@ local InventoryService = {}
 -------------------------------------------------
 
 local function getInv(player)
-	return SaveService.Get(player).Inventory.Slots
+	local save = SaveService.Get(player)
+	if not save then
+		warn("[InventoryService] SaveService.Get returned nil for", player.Name)
+		return nil
+	end
+	if not save.Inventory or not save.Inventory.Slots then
+		warn("[InventoryService] Malformed save for", player.Name)
+		return nil
+	end
+	return save.Inventory.Slots
 end
 
 local function cloneSlot(s)
@@ -38,6 +47,7 @@ end
 
 function InventoryService.Sync(player)
 	local slots = getInv(player)
+	if not slots then return end
 	Net.Fire(Contracts.Remotes.Update, player, { slots = slots })
 end
 
@@ -82,6 +92,7 @@ end
 
 function InventoryService.AddItem(player, itemId, qty)
 	local inv = getInv(player)
+	if not inv then return false end
 	local def = ItemDB[itemId]
 	if not def then return false end
 
@@ -123,6 +134,7 @@ end
 
 function InventoryService.RemoveItem(player, itemId, qty)
 	local inv = getInv(player)
+	if not inv then return false end
 	local def = ItemDB[itemId]
 	if not def then return false end
 
@@ -150,6 +162,7 @@ end
 
 function InventoryService.Move(player, fromIdx, toIdx, qty)
 	local inv = getInv(player)
+	if not inv then return false end
 
 	if fromIdx < 1 or fromIdx > 30 then return false end
 	if toIdx < 1 or toIdx > 30 then return false end
@@ -167,6 +180,7 @@ function InventoryService.Move(player, fromIdx, toIdx, qty)
 		inv[toIdx] = { ItemId=a.ItemId, Qty=qty }
 		a.Qty -= qty
 		if a.Qty <= 0 then inv[fromIdx] = nil end
+		InventoryService.Sync(player)
 		return true
 	end
 
@@ -178,6 +192,7 @@ function InventoryService.Move(player, fromIdx, toIdx, qty)
 		b.Qty += can
 		a.Qty -= can
 		if a.Qty <= 0 then inv[fromIdx] = nil end
+		InventoryService.Sync(player)
 		return true
 	end
 
@@ -227,6 +242,7 @@ end
 
 function InventoryService.DropItem(player, slotIdx)
 	local inv = getInv(player)
+	if not inv then return false end
 	if slotIdx < 1 or slotIdx > 30 then return false end
 	local s = inv[slotIdx]
 	if not s then return false end

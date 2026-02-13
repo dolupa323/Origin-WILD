@@ -133,8 +133,14 @@ function InteractionUI:Init()
 		HPFill = hpFill,
 	}
 
-	-- Scan loop (no crosshair, just prompt + entity info)
-	RunService.RenderStepped:Connect(function()
+	-- Scan loop (throttled to ~10Hz instead of every frame)
+	local SCAN_INTERVAL = 0.1
+	local lastScan = 0
+	RunService.Heartbeat:Connect(function()
+		local t = os.clock()
+		if t - lastScan < SCAN_INTERVAL then return end
+		lastScan = t
+
 		local camera = workspace.CurrentCamera
 		if not camera then return end
 

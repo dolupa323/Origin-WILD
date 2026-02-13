@@ -15,7 +15,6 @@ function StoneSword.OnUnequip(ctx)
 end
 
 function StoneSword.OnUse(ctx)
-	-- ctx: { player, aim, CombatSystem, ... } (주입됨)
 	local player = ctx.player
 	local aim = ctx.aim
 	local CombatSystem = ctx.CombatSystem
@@ -31,15 +30,15 @@ function StoneSword.OnUse(ctx)
 	-- Generate request ID
 	local rid = tostring(math.random(100000, 999999)) .. "-" .. tostring(os.clock())
 
-	-- Call CombatSystem.AttackRequest
+	-- Call CombatSystem.AttackRequest (pass target along)
 	local ack = CombatSystem.AttackRequest(player, rid, {
 		kind = "Melee",
 		aim = {
-			dir = aim.dir
+			dir = aim.dir,
+			target = aim.target,
 		}
 	})
 
-	-- Convert ack response {rid, ok, code, msg, data} to OnUse format
 	if ack.ok then
 		return true, ack.code or "OK", ack.data
 	else

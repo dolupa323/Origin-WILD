@@ -88,7 +88,9 @@ function SaveService.Save(player)
 	local key = "P_" .. player.UserId
 
 	local ok, err = pcall(function()
-		STORE:SetAsync(key, data)
+		STORE:UpdateAsync(key, function()
+			return data
+		end)
 	end)
 
 	if not ok then

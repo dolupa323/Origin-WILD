@@ -25,7 +25,6 @@ function UseService.UseRequest(player, aim)
 	-- 1. Global Cooldown Check
 	local t = now()
 	if nextGlobalUse[player.UserId] and t < nextGlobalUse[player.UserId] then
-		-- print(("[Use] reject code=%s"):format(Contracts.ErrorCodes.COOLDOWN))
 		return false, Contracts.ErrorCodes.COOLDOWN
 	end
 	nextGlobalUse[player.UserId] = t + GLOBAL_COOLDOWN
@@ -33,50 +32,20 @@ function UseService.UseRequest(player, aim)
 	-- 2. Get Active Item from Hotbar
 	local item, invSlot = HotbarService.GetActiveItem(player)
 	if not item then
-		-- print(("[Use] reject code=%s"):format(Contracts.ErrorCodes.NO_ACTIVE_ITEM))
 		return false, Contracts.ErrorCodes.NO_ACTIVE_ITEM
 	end
 
 	local itemId = item.ItemId
-	-- print(("[Use] request user=%s"):format(player.Name))
-	-- print(("[Use] active item=%s invSlot=%d"):format(itemId, invSlot))
 
-	-- 3. Delegate to EquipService (which loads Item script)
-	-- We need to manually construct the context because EquipService doesn't have a standardized "Use" entry point for hotbar items yet
-	-- in the previous EquipService implementation.
-	-- However, EquipRegistry is inside EquipService. Let's rely on EquipService to dispatch.
-	-- *Check EquipService implementation*: It usually handles "Equip/Unequip".
-	-- We need to call the Item Module's OnUse directly.
-	
-	-- Loading Item Module logic (duplicated from EquipService, or exposed by it)
-	-- Ideally EquipService should expose `GetItemModule(itemId)`.
-	-- Since we don't have that handy, let's require it directly using the same pattern, or ask EquipService.
-	
-	-- Refactor Note: Ideally EquipService should handle this dispatch.
-	-- For Phase 1-4-2, strict DoD: "EquipRegistry.OnUse(player, itemId)"
-	-- Let's check if EquipService has `OnUse`.
-	
-	-- Creating Context for Item.OnUse
+	-- 3. Delegate to EquipService.DispatchUse
 	local ctx = {
 		player = player,
 		aim = aim,
 		ResourceNodeService = ResourceNodeService,
 		CombatSystem = CombatSystem,
-		-- In future: InventoryService, etc.
 	}
 	
 	local ok, code, data = EquipService.DispatchUse(itemId, ctx)
-	
-	if ok then
-		-- print(("[Use] dispatch handler=%s"):format(data and data.handler or "Unknown"))
-	else
-		-- If item has no Use handler, maybe it's just a resource?
-		-- For now, if dispatch fails (no OnUse), we return OK but do nothing?
-		-- Or return FAIL?
-		-- If DispatchUse returns false (e.g. no module), fail.
-		-- print(("[Use] dispatch failed code=%s"):format(tostring(code)))
-	end
-
 	return ok, code, data
 end
 
@@ -88,7 +57,16 @@ function UseService:Init()
 	})
 	
 	Net.On(Contracts.Remotes.Request, function(player, payload)
-		local aim = payload.aim
+		-- Envelope 검증
+		if type(payload) ~= "table" or type(payload.data) ~= "table" then
+			Net.Fire(Contracts.Remotes.Ack, player, {
+				ok = false,
+				code = Contracts.ErrorCodes.VALIDATION_FAILED,
+			})
+			return
+		end
+
+		local aim = payload.data.aim
 		local ok, code, data = UseService.UseRequest(player, aim)
 		
 		Net.Fire(Contracts.Remotes.Ack, player, {

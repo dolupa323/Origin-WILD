@@ -15,6 +15,10 @@ local UseController = {}
 local MOUSE_COOLDOWN = 0.2
 local nextClick = 0
 
+local function newRid()
+	return tostring(math.random(10000, 99999)) .. "-" .. tostring(os.clock())
+end
+
 function UseController:Init()
 	-- Mouse Click
 	UserInputService.InputBegan:Connect(function(input, gpe)
@@ -27,14 +31,17 @@ function UseController:Init()
 			
 			local camera = workspace.CurrentCamera
 			local mouse = Players.LocalPlayer:GetMouse()
-			-- Simply send aim direction from camera or character
-			-- Let's use camera look vector for aim
+			local target = mouse.Target
 			local aimDir = camera.CFrame.LookVector
 			
-			-- Send aim for server raycast
+			-- Envelope 통일: { rid, data = { aim = ... } }
 			Net.Fire(Contracts.Remotes.Request, {
-				aim = {
-					dir = aimDir
+				rid = newRid(),
+				data = {
+					aim = {
+						dir = aimDir,
+						target = target,
+					}
 				}
 			})
 		end

@@ -95,22 +95,45 @@ function CombatSystem.AttackRequest(player: Player, rid: string, data: table)
 	end
 
 	local dir = aim.dir
-	-- sanity: prevent NaN / zero
 	if dir.Magnitude < 0.001 then
 		return ack(rid, false, "VALIDATION_FAILED", "dir too small")
 	end
 
-	local hit, origin = raycastFromPlayer(player, dir, MELEE_RANGE)
-	if not hit then
-		return ack(rid, true, "OK", "no hit", { hit=false })
+	local origin, char = getOrigin(player)
+	if not origin then
+		return ack(rid, false, "INTERNAL_ERROR", "no origin")
 	end
 
-	local hum, model = findHumanoidFromHit(hit.Instance)
+	-- 1. 클라이언트 타겟 우선 사용 (parallax fix)
+	local hitInstance = nil
+	local hitPos = nil
+	local clientTarget = aim.target
+
+	if clientTarget and clientTarget.Parent then
+		-- 거리 검증
+		local targetPos = clientTarget.Position
+		local dist = (targetPos - origin).Magnitude
+		if dist > MELEE_RANGE then
+			return ack(rid, true, "OK", "too far", { hit = false })
+		end
+		hitInstance = clientTarget
+		hitPos = targetPos
+	else
+		-- 백업: 기존 Raycast
+		local result, _origin = raycastFromPlayer(player, dir, MELEE_RANGE)
+		if not result then
+			return ack(rid, true, "OK", "no hit", { hit=false })
+		end
+		hitInstance = result.Instance
+		hitPos = result.Position
+	end
+
+	local hum, model = findHumanoidFromHit(hitInstance)
 	if not hum then
 		return ack(rid, true, "OK", "hit non-humanoid", {
 			hit=true,
-			hitInstance=hit.Instance:GetFullName(),
-			pos=hit.Position,
+			hitInstance=hitInstance:GetFullName(),
+			pos=hitPos,
 		})
 	end
 
@@ -119,7 +142,7 @@ function CombatSystem.AttackRequest(player: Player, rid: string, data: table)
 	hum:TakeDamage(MELEE_DAMAGE)
 	local after = hum.Health
 	
-	FeedbackService.ShowDamage(hit.Position, MELEE_DAMAGE, "Default")
+	FeedbackService.ShowDamage(hitPos, MELEE_DAMAGE, "Default")
 
 	-- optional: apply burn to attacker (Phase0 test), or to victim player if it is a Player
 	-- For Phase0, simplest: apply to attacker to prove pipeline works,
@@ -140,7 +163,7 @@ function CombatSystem.AttackRequest(player: Player, rid: string, data: table)
 		damage=MELEE_DAMAGE,
 		hpBefore=before,
 		hpAfter=after,
-		hitPos=hit.Position,
+		hitPos=hitPos,
 	})
 end
 

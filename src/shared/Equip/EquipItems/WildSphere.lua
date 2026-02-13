@@ -6,6 +6,14 @@ local WildSphere = {}
 
 WildSphere.Cooldown = 0.5
 
+function WildSphere.OnEquip(ctx)
+	return true, "OK"
+end
+
+function WildSphere.OnUnequip(ctx)
+	return true, "OK"
+end
+
 function WildSphere.OnUse(ctx)
 	local player = ctx.player
 	local aim = ctx.aim
@@ -14,32 +22,40 @@ function WildSphere.OnUse(ctx)
 		return false, "MISSING_AIM"
 	end
 	
-	-- 1. Raycast to find target
 	local char = player.Character
 	if not char then return false, "NO_CHAR" end
 	local hrp = char:FindFirstChild("HumanoidRootPart")
 	if not hrp then return false, "NO_HRP" end
 	
-	local rayParams = RaycastParams.new()
-	rayParams.FilterType = Enum.RaycastFilterType.Exclude
-	rayParams.FilterDescendantsInstances = { char }
+	-- 1. 클라이언트 타겟 우선 사용 (parallax fix)
+	local hitInst = nil
+	local target = aim.target
 	
-	local hitResult = workspace:Raycast(hrp.Position, aim.dir.Unit * 30, rayParams)
-	if not hitResult then
-		return true, "MISS", { hit = false }
+	if target and target.Parent then
+		-- 거리 검증
+		if (target.Position - hrp.Position).Magnitude > 30 then
+			return true, "MISS", { hit = false }
+		end
+		hitInst = target
+	else
+		-- 백업: Raycast
+		local rayParams = RaycastParams.new()
+		rayParams.FilterType = Enum.RaycastFilterType.Exclude
+		rayParams.FilterDescendantsInstances = { char }
+		
+		local hitResult = workspace:Raycast(hrp.Position, aim.dir.Unit * 30, rayParams)
+		if not hitResult then
+			return true, "MISS", { hit = false }
+		end
+		hitInst = hitResult.Instance
 	end
 	
-	local hitInst = hitResult.Instance
 	local monster = hitInst:FindFirstAncestorOfClass("Model")
-	
 	if not monster then
 		return true, "MISS", { hit = false }
 	end
 	
-	-- 2. Consume Item (Sphere is one-time use)
-	-- *Note*: UseService calls this. We should tell UseService to consume.
-	-- Or we call InventoryService.AddItem(player, itemId, -1)
-	
+	-- 2. Consume Item
 	local InventoryService = require(game:GetService("ServerScriptService").Code.Server.Services.InventoryService)
 	InventoryService.AddItem(player, "WildSphere", -1)
 	

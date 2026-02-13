@@ -162,10 +162,10 @@ function InventoryUI:Init()
 	closeBtn.Text = "✕"
 	closeBtn.Size = UDim2.new(0, 32, 0, 32)
 	closeBtn.Position = UDim2.new(1, -PANEL_PAD - 32, 0, 8)
-	closeBtn.BackgroundColor3 = C.SlotBg
-	closeBtn.TextColor3 = C.TextDim
+	closeBtn.BackgroundColor3 = C.Danger
+	closeBtn.TextColor3 = Color3.new(1, 1, 1)
 	closeBtn.Font = Enum.Font.GothamBold
-	closeBtn.TextSize = 16
+	closeBtn.TextSize = 18
 	closeBtn.BorderSizePixel = 0
 	closeBtn.Parent = header
 	Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 6)
@@ -383,13 +383,29 @@ function InventoryUI._endDrag(mousePos)
 	local mx, my = mousePos.X, mousePos.Y
 	local targetSlot = getSlotAt(mx, my)
 
+	-- 보정: 정확히 슬롯 위가 아니더라도 그리드 내부라면 가장 가까운 슬롯 찾기
+	if not targetSlot and gridFrame and isInBounds(gridFrame, mx, my) then
+		local closest = nil
+		local minDst = math.huge
+		for i, el in pairs(elements) do
+			local f = el.Frame
+			local center = f.AbsolutePosition + (f.AbsoluteSize / 2)
+			local dst = (Vector2.new(mx, my) - center).Magnitude
+			if dst < (SLOT_SIZE * 0.8) and dst < minDst then
+				closest = i
+				minDst = dst
+			end
+		end
+		targetSlot = closest
+	end
+
 	-- Cleanup ghost
 	if ghostFrame then
 		ghostFrame:Destroy()
 		ghostFrame = nil
 	end
 
-	-- Restore origin slot
+	-- Restore origin slot appearance
 	local orig = elements[fromSlot]
 	if orig then
 		orig.NameLbl.TextTransparency = 0
